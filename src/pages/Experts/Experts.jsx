@@ -42,7 +42,8 @@ const categories = ['All', 'Mental Health', 'Legal Aid', 'Medical Services', 'Ca
 const Experts = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const [professionals, setProfessionals] = useState([]);
+  const [allProfessionals, setAllProfessionals] = useState([]);
+  const [filteredProfessionals, setFilteredProfessionals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,26 +51,47 @@ const Experts = () => {
   const [sortBy, setSortBy] = useState('rating');
   const [favorites, setFavorites] = useState(new Set());
 
+  // Fetch data from Firestore based on filters
   useEffect(() => {
     const fetchProfessionals = async () => {
       setLoading(true);
       setError('');
       try {
-        const result = await getProfessionals({ verified: true });
+        const result = await getProfessionals({
+          verified: true,
+          category: selectedCategory,
+          sortBy: sortBy,
+        });
+
         if (result.success) {
-          setProfessionals(result.professionals);
+          setAllProfessionals(result.professionals);
+          setFilteredProfessionals(result.professionals);
         } else {
           setError(result.error || 'Failed to fetch professionals.');
         }
       } catch (err) {
         setError('An error occurred while fetching professionals.');
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchProfessionals();
-  }, []);
+  }, [selectedCategory, sortBy]); // Re-fetch when category or sort option changes
+
+  // Handle client-side search filtering
+  useEffect(() => {
+    const results = allProfessionals.filter(professional =>
+      professional.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      professional.specialization.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (professional.specialties && professional.specialties.some(specialty =>
+        specialty.toLowerCase().includes(searchTerm.toLowerCase())
+      ))
+    );
+    setFilteredProfessionals(results);
+  }, [searchTerm, allProfessionals]);
+
 
   const toggleFavorite = (professionalId) => {
     const newFavorites = new Set(favorites);
@@ -80,23 +102,6 @@ const Experts = () => {
     }
     setFavorites(newFavorites);
   };
-
-  const filteredProfessionals = professionals
-    .filter(professional => {
-      const matchesSearch = professional.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           professional.specialization.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (professional.specialties && professional.specialties.some(specialty =>
-                             specialty.toLowerCase().includes(searchTerm.toLowerCase())
-                           ));
-      const matchesCategory = selectedCategory === 'All' || professional.category === selectedCategory;
-      return matchesSearch && matchesCategory;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'rating') return b.rating - a.rating;
-      if (sortBy === 'price') return (a.price || 0) - (b.price || 0);
-      if (sortBy === 'experience') return (b.experience || 0) - (a.experience || 0);
-      return 0;
-    });
 
   return (
     <Box sx={{ py: 8, bgcolor: 'background.default', minHeight: '100vh' }}>
@@ -159,7 +164,11 @@ const Experts = () => {
             <CircularProgress />
           </Box>
         ) : error ? (
-          <Typography color="error" sx={{ textAlign: 'center' }}>{error}</Typography>
+          <Typography color="error" sx={{ textAlign: 'center', p: 4, bgcolor: 'rgba(255,0,0,0.05)', borderRadius: 2 }}>
+            {error.toString()}
+            <br />
+            If this is an index error, please ensure you have created the necessary composite indexes in your Firestore database.
+          </Typography>
         ) : (
           <Grid container spacing={4}>
             {filteredProfessionals.map((professional, index) => (
@@ -183,7 +192,11 @@ const Experts = () => {
                   }}
                 >
                   <CardContent sx={{ flexGrow: 1, p: 3 }}>
-                    {/* ... Card content remains the same, but uses dynamic data like professional.name, professional.rating etc. ... */}
+                    <Avatar sx={{ width: 80, height: 80, mb: 2, bgcolor: 'primary.light' }}>{professional.name.charAt(0)}</Avatar>
+                    <Typography variant="h6" sx={{ fontWeight: 700 }}>{professional.name}</Typography>
+                    <Typography variant="body1" color="primary" sx={{ mb: 1 }}>{professional.specialization}</Typography>
+                    <Rating value={professional.rating} readOnly precision={0.5} />
+                    <Chip label={professional.category} size="small" sx={{ mt: 2 }}/>
                   </CardContent>
                 </MotionCard>
               </Grid>
@@ -202,6 +215,7 @@ const Experts = () => {
               onClick={() => {
                 setSearchTerm('');
                 setSelectedCategory('All');
+                setSortBy('rating');
               }}
             >
               Clear Filters

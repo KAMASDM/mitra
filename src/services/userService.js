@@ -1,15 +1,15 @@
 // src/services/userService.js
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  getDoc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  orderBy, 
+import {
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
   limit,
   startAfter,
   onSnapshot
@@ -44,10 +44,10 @@ export const getAllUsers = async (userType = null, pageSize = 20, lastDoc = null
       users.push({ id: doc.id, ...doc.data() });
     });
     
-    return { 
-      users, 
+    return {
+      users,
       lastDoc: querySnapshot.docs[querySnapshot.docs.length - 1],
-      success: true 
+      success: true
     };
   } catch (error) {
     console.error('Error getting users:', error);
@@ -102,41 +102,42 @@ export const deleteUser = async (userId) => {
 // Get professionals with filters
 export const getProfessionals = async (filters = {}) => {
   try {
-    let q = collection(db, PROFESSIONALS_COLLECTION);
-    
-    // Apply filters
-    if (filters.category) {
-      q = query(q, where('category', '==', filters.category));
+    const professionalsRef = collection(db, PROFESSIONALS_COLLECTION);
+    const queryConstraints = []; // Array to hold all our query constraints
+
+    // --- Build Filter Conditions ---
+    if (filters.category && filters.category !== 'All') {
+      queryConstraints.push(where('category', '==', filters.category));
     }
-    
-    if (filters.location) {
-      q = query(q, where('location', '==', filters.location));
-    }
-    
+
     if (filters.verified !== undefined) {
-      q = query(q, where('verified', '==', filters.verified));
+      queryConstraints.push(where('verified', '==', filters.verified));
     }
-    
-    if (filters.available !== undefined) {
-      q = query(q, where('available', '==', filters.available));
+
+    // --- Build Sorting Condition ---
+    if (filters.sortBy) {
+      const direction = filters.sortBy === 'price' ? 'asc' : 'desc';
+      queryConstraints.push(orderBy(filters.sortBy, direction));
+    } else {
+      // Default sort if none is provided
+      queryConstraints.push(orderBy('rating', 'desc'));
     }
-    
-    // Order by rating or creation date
-    const orderField = filters.sortBy || 'rating';
-    const orderDirection = filters.sortOrder || 'desc';
-    q = query(q, orderBy(orderField, orderDirection));
-    
+
+    // --- Build Limit Condition ---
     if (filters.limit) {
-      q = query(q, limit(filters.limit));
+      queryConstraints.push(limit(filters.limit));
     }
-    
+
+    // --- Construct the final query with all constraints at once ---
+    const q = query(professionalsRef, ...queryConstraints);
+
     const querySnapshot = await getDocs(q);
     const professionals = [];
-    
+
     querySnapshot.forEach((doc) => {
       professionals.push({ id: doc.id, ...doc.data() });
     });
-    
+
     return { professionals, success: true };
   } catch (error) {
     console.error('Error getting professionals:', error);
@@ -151,9 +152,9 @@ export const getProfessionalById = async (professionalId) => {
     const professionalSnap = await getDoc(professionalRef);
     
     if (professionalSnap.exists()) {
-      return { 
-        professional: { id: professionalSnap.id, ...professionalSnap.data() }, 
-        success: true 
+      return {
+        professional: { id: professionalSnap.id, ...professionalSnap.data() },
+        success: true
       };
     } else {
       return { error: 'Professional not found', success: false };
@@ -280,11 +281,11 @@ export const getUserStatistics = async (userId, userType) => {
       
       stats = {
         totalBookings: bookingsSnapshot.size,
-        completedSessions: bookingsSnapshot.docs.filter(doc => 
+        completedSessions: bookingsSnapshot.docs.filter(doc =>
           doc.data().status === 'completed'
         ).length,
         favoriteProfessionals: 0, // You can implement favorites collection
-        totalSpent: bookingsSnapshot.docs.reduce((total, doc) => 
+        totalSpent: bookingsSnapshot.docs.reduce((total, doc) =>
           total + (doc.data().amount || 0), 0
         )
       };
@@ -303,16 +304,16 @@ export const getUserStatistics = async (userId, userType) => {
       const reviewsSnapshot = await getDocs(reviewsQuery);
       
       const ratings = reviewsSnapshot.docs.map(doc => doc.data().rating);
-      const averageRating = ratings.length > 0 
-        ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length 
+      const averageRating = ratings.length > 0
+        ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length
         : 0;
       
       stats = {
         totalSessions: bookingsSnapshot.size,
-        completedSessions: bookingsSnapshot.docs.filter(doc => 
+        completedSessions: bookingsSnapshot.docs.filter(doc =>
           doc.data().status === 'completed'
         ).length,
-        totalEarnings: bookingsSnapshot.docs.reduce((total, doc) => 
+        totalEarnings: bookingsSnapshot.docs.reduce((total, doc) =>
           total + (doc.data().amount || 0), 0
         ),
         averageRating: parseFloat(averageRating.toFixed(1)),

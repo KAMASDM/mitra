@@ -1,5 +1,5 @@
 // src/services/authService.js
-import { 
+import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
@@ -15,20 +15,22 @@ import { auth, db } from '../config/firebase';
 // Create user profile in Firestore
 const createUserProfile = async (user, additionalData = {}) => {
   if (!user) return;
-  
+
   const userRef = doc(db, 'users', user.uid);
   const userSnap = await getDoc(userRef);
-  
+
   if (!userSnap.exists()) {
     const { displayName, email, photoURL } = user;
     const createdAt = new Date();
-    
+
     try {
       await setDoc(userRef, {
         displayName,
         email,
         photoURL,
         createdAt,
+        // Ensure role is always set, defaulting to 'CLIENT'
+        role: 'CLIENT',
         ...additionalData
       });
     } catch (error) {
@@ -36,7 +38,7 @@ const createUserProfile = async (user, additionalData = {}) => {
       throw error;
     }
   }
-  
+
   return userRef;
 };
 
@@ -44,12 +46,12 @@ const createUserProfile = async (user, additionalData = {}) => {
 export const signUpWithEmailAndPassword = async (email, password, userData) => {
   try {
     const { user } = await createUserWithEmailAndPassword(auth, email, password);
-    
+
     // Update display name
     if (userData.displayName) {
       await updateProfile(user, { displayName: userData.displayName });
     }
-    
+
     // Create user profile in Firestore
     await createUserProfile(user, {
       ...userData,
@@ -57,7 +59,7 @@ export const signUpWithEmailAndPassword = async (email, password, userData) => {
       emailVerified: user.emailVerified,
       isActive: true
     });
-    
+
     return { user, success: true };
   } catch (error) {
     console.error('Error signing up:', error);
@@ -69,22 +71,22 @@ export const signUpWithEmailAndPassword = async (email, password, userData) => {
 export const signInWithEmailAndPassword_Custom = async (email, password) => {
   try {
     const { user } = await signInWithEmailAndPassword(auth, email, password);
-    
+
     // Get user profile from Firestore
     const userRef = doc(db, 'users', user.uid);
     const userSnap = await getDoc(userRef);
-    
+
     if (userSnap.exists()) {
       const userData = userSnap.data();
-      return { 
+      return {
         user: {
           ...user,
           ...userData
-        }, 
-        success: true 
+        },
+        success: true
       };
     }
-    
+
     return { user, success: true };
   } catch (error) {
     console.error('Error signing in:', error);
@@ -119,15 +121,22 @@ export const signInWithGoogle = async () => {
   try {
     const provider = new GoogleAuthProvider();
     const { user } = await signInWithPopup(auth, provider);
-    
-    // Create or update user profile
+
+    // Create or update user profile, ensuring the role is set
     await createUserProfile(user, {
-      role: 'CLIENT',
       provider: 'google',
       isActive: true
     });
     
-    return { user, success: true };
+    // Fetch the user's profile to get the role and other data
+    const userProfile = await getDoc(doc(db, 'users', user.uid));
+    const userData = userProfile.data();
+
+    return { 
+        user: { ...user, ...userData }, 
+        success: true 
+    };
+
   } catch (error) {
     console.error('Error signing in with Google:', error);
     return { error: error.message, success: false };
@@ -139,15 +148,21 @@ export const signInWithFacebook = async () => {
   try {
     const provider = new FacebookAuthProvider();
     const { user } = await signInWithPopup(auth, provider);
-    
+
     // Create or update user profile
     await createUserProfile(user, {
-      role: 'CLIENT',
       provider: 'facebook',
       isActive: true
     });
     
-    return { user, success: true };
+    // Fetch the user's profile to get the role and other data
+    const userProfile = await getDoc(doc(db, 'users', user.uid));
+    const userData = userProfile.data();
+
+    return { 
+      user: { ...user, ...userData }, 
+      success: true 
+    };
   } catch (error) {
     console.error('Error signing in with Facebook:', error);
     return { error: error.message, success: false };
@@ -174,7 +189,7 @@ export const getCurrentUserProfile = async (userId) => {
   try {
     const userRef = doc(db, 'users', userId);
     const userSnap = await getDoc(userRef);
-    
+
     if (userSnap.exists()) {
       return { userData: userSnap.data(), success: true };
     } else {
