@@ -118,10 +118,11 @@ export const resetPassword = async (email) => {
 
 // Google Sign In
 export const signInWithGoogle = async () => {
+  // debugger;
   try {
     const provider = new GoogleAuthProvider();
     const { user } = await signInWithPopup(auth, provider);
-
+    const token = await user.getIdToken();
     // Create or update user profile, ensuring the role is set
     await createUserProfile(user, {
       provider: 'google',

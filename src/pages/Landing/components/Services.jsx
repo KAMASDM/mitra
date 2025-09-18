@@ -95,7 +95,7 @@ const ServicesSection = () => {
   return (
     <Box
       sx={{
-        py: { xs: 8, md: 12 },
+        // py: { xs: 8, md: 12 },
         bgcolor: 'background.default',
       }}
     >
@@ -114,7 +114,7 @@ const ServicesSection = () => {
             sx={{
               fontWeight: 800,
               color: 'text.primary',
-              mb: 2,
+              // mb: 2,
             }}
           >
             Comprehensive Services
@@ -134,9 +134,9 @@ const ServicesSection = () => {
         </MotionBox>
 
         {/* Services Grid */}
-        <Grid container spacing={4}>
+        <Grid container spacing={4} minWidth={'40%'}>
           {services.map((service, index) => (
-            <Grid item xs={12} sm={6} lg={3} key={index}>
+            <Grid item xs={12} sm={6} lg={3} key={index} size={{ xs: 12, md: 4 }}>
               <MotionCard
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -156,6 +156,9 @@ const ServicesSection = () => {
                     boxShadow: `0 15px 35px ${alpha(service.color, 0.2)}`,
                   },
                   transition: 'all 0.3s ease',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                 
                 }}
               >
                 {/* Popular Badge */}
@@ -385,8 +388,8 @@ const ServicesSection = () => {
             How It Works
           </Typography>
           
-          <Grid container spacing={4} alignItems="center">
-            <Grid item xs={12} md={4}>
+          <Grid container spacing={4} alignItems="center" justifyContent="center" sx={{width: '100%'}}>
+            <Grid item size={{ xs: 12, md: 4 }}>
               <Box sx={{ textAlign: 'center', p: 3 }}>
                 <Box
                   sx={{
@@ -414,7 +417,7 @@ const ServicesSection = () => {
               </Box>
             </Grid>
             
-            <Grid item xs={12} md={4}>
+            <Grid item size={{ xs: 12, md: 4 }}>
               <Box sx={{ textAlign: 'center', p: 3 }}>
                 <Box
                   sx={{
@@ -442,7 +445,7 @@ const ServicesSection = () => {
               </Box>
             </Grid>
             
-            <Grid item xs={12} md={4}>
+            <Grid item size={{ xs: 12, md: 4 }}>
               <Box sx={{ textAlign: 'center', p: 3 }}>
                 <Box
                   sx={{

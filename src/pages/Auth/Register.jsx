@@ -24,6 +24,7 @@ import {
   Stepper,
   Step,
   StepLabel,
+  Grid,
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -168,13 +169,265 @@ const Register = () => {
     }
   };
 
-  // ... (renderStepContent function remains the same)
+  const renderStepContent = () => {
+    switch (activeStep) {
+      case 0:
+        return (
+          <Grid container spacing={3}>
+            <Grid item size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                name="firstName"
+                label="First Name"
+                value={formData.firstName}
+                onChange={handleChange}
+                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Person />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+            <Grid item size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                name="lastName"
+                label="Last Name"
+                value={formData.lastName}
+                onChange={handleChange}
+                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Person />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+            <Grid item size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                name="email"
+                type="email"
+                label="Email Address"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Email />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+            <Grid item size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                name="phone"
+                label="Phone Number"
+                value={formData.phone}
+                onChange={handleChange}
+                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Phone />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+            <Grid item size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                label="Password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Lock />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+            <Grid item size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                name="confirmPassword"
+                type={showConfirmPassword ? 'text' : 'password'}
+                label="Confirm Password"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Lock />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        edge="end"
+                      >
+                        {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+          </Grid>
+        );
+      case 1:
+        return (
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel>Account Type</InputLabel>
+                <Select
+                  name="accountType"
+                  value={formData.accountType}
+                  label="Account Type"
+                  onChange={handleChange}
+                >
+                  <MenuItem value="CLIENT">Client</MenuItem>
+                  <MenuItem value="PROFESSIONAL">Professional</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            {formData.accountType === 'PROFESSIONAL' && (
+              <>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    name="profession"
+                    label="Profession"
+                    value={formData.profession}
+                    onChange={handleChange}
+                    required
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Work />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    name="experience"
+                    label="Years of Experience"
+                    type="number"
+                    value={formData.experience}
+                    onChange={handleChange}
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    name="specialization"
+                    label="Specialization"
+                    value={formData.specialization}
+                    onChange={handleChange}
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    name="location"
+                    label="Location (City, State)"
+                    value={formData.location}
+                    onChange={handleChange}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LocationOn />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Grid>
+              </>
+            )}
+          </Grid>
+        );
+      case 2:
+        return (
+          <Stack spacing={2}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  name="agreeTerms"
+                  checked={formData.agreeTerms}
+                  onChange={handleChange}
+                />
+              }
+              label={
+                <Typography>
+                  I agree to the{' '}
+                  <Link href="/terms" target="_blank">
+                    Terms and Conditions
+                  </Link>
+                </Typography>
+              }
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  name="agreePrivacy"
+                  checked={formData.agreePrivacy}
+                  onChange={handleChange}
+                />
+              }
+              label={
+                <Typography>
+                  I agree to the{' '}
+                  <Link href="/privacy" target="_blank">
+                    Privacy Policy
+                  </Link>
+                </Typography>
+              }
+            />
+          </Stack>
+        );
+      default:
+        return null;
+    }
+  };
+
 
   return (
     <Box
       sx={{
-        minHeight: '100vh',
+        minWidth: '98vw', // Viewport width
+        minHeight: '100vh', // Viewport height
+        overflowX: 'hidden !important', // Prevent horizontal scroll
         display: 'flex',
+        flexDirection: 'column', // Card ko center karne ke liye
         alignItems: 'center',
         justifyContent: 'center',
         py: 8,

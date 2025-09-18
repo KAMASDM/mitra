@@ -106,7 +106,7 @@ const Hero = () => {
             </MotionBox>
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={6} sx={{ my: 2 }}>
             <Grid container spacing={2}>
               {services.map((service, index) => (
                 <Grid item xs={6} key={service.id}>
@@ -116,8 +116,8 @@ const Hero = () => {
                     transition={{ duration: 0.6, delay: 0.4 + index * 0.1 }}
                     whileHover={{ scale: 1.05, y: -5 }}
                     sx={{
-                      p: 3,
-                      borderRadius: 4,
+                      p: 2,
+                      borderRadius: '20%',
                       background: 'rgba(255, 255, 255, 0.8)',
                       backdropFilter: 'blur(10px)',
                       border: `1px solid ${alpha(service.color, 0.3)}`,

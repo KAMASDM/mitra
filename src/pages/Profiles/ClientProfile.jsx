@@ -247,7 +247,7 @@ const ClientProfile = () => {
                 </Box>
 
                 <Grid container spacing={3}>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item size={{ xs: 12, sm: 4 }}>
                     <TextField
                       fullWidth
                       name="displayName"
@@ -257,7 +257,7 @@ const ClientProfile = () => {
                       disabled={!isEditing}
                     />
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item size={{ xs: 12, sm: 4 }}>
                     <TextField
                       fullWidth
                       name="email"
@@ -268,7 +268,7 @@ const ClientProfile = () => {
                       disabled={true} // Email is usually not editable
                     />
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item size={{ xs: 12, sm: 4 }}>
                     <TextField
                       fullWidth
                       name="phone"
@@ -278,7 +278,7 @@ const ClientProfile = () => {
                       disabled={!isEditing}
                     />
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item size={{ xs: 12, sm: 4 }}>
                     <TextField
                       fullWidth
                       name="dateOfBirth"
@@ -290,7 +290,7 @@ const ClientProfile = () => {
                       InputLabelProps={{ shrink: true }}
                     />
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item size={{ xs: 12, sm: 4 }}>
                     <FormControl fullWidth disabled={!isEditing}>
                       <InputLabel>Gender</InputLabel>
                       <Select
@@ -307,7 +307,7 @@ const ClientProfile = () => {
                       </Select>
                     </FormControl>
                   </Grid>
-                  <Grid item xs={12}>
+                  <Grid item size={{ xs: 12, sm: 4 }}>
                     <TextField
                       fullWidth
                       name="location"

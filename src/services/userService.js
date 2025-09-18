@@ -100,26 +100,26 @@ export const deleteUser = async (userId) => {
 };
 
 // Get professionals with filters
+
 export const getProfessionals = async (filters = {}) => {
   try {
     const professionalsRef = collection(db, PROFESSIONALS_COLLECTION);
-    const queryConstraints = []; // Array to hold all our query constraints
+    const queryConstraints = [];
 
     // --- Build Filter Conditions ---
     if (filters.category && filters.category !== 'All') {
       queryConstraints.push(where('category', '==', filters.category));
     }
-
-    if (filters.verified !== undefined) {
-      queryConstraints.push(where('verified', '==', filters.verified));
+    if (filters.verified) {
+      queryConstraints.push(where('verification_status', '==', 'VERIFIED'));
     }
 
     // --- Build Sorting Condition ---
     if (filters.sortBy) {
       const direction = filters.sortBy === 'price' ? 'asc' : 'desc';
-      queryConstraints.push(orderBy(filters.sortBy, direction));
+      const sortByField = filters.sortBy === 'experience' ? 'years_of_experience' : filters.sortBy;
+      queryConstraints.push(orderBy(sortByField, direction));
     } else {
-      // Default sort if none is provided
       queryConstraints.push(orderBy('rating', 'desc'));
     }
 
@@ -128,17 +128,42 @@ export const getProfessionals = async (filters = {}) => {
       queryConstraints.push(limit(filters.limit));
     }
 
-    // --- Construct the final query with all constraints at once ---
+    // --- Query the 'professionals' collection ---
     const q = query(professionalsRef, ...queryConstraints);
+    const professionalsSnapshot = await getDocs(q);
 
-    const querySnapshot = await getDocs(q);
-    const professionals = [];
+    if (professionalsSnapshot.empty) {
+        return { professionals: [], success: true }; 
+    }
 
-    querySnapshot.forEach((doc) => {
-      professionals.push({ id: doc.id, ...doc.data() });
+    const mergedDataPromises = professionalsSnapshot.docs.map(async (professionalDoc) => {
+      const professionalData = { id: professionalDoc.id, ...professionalDoc.data() };
+      
+      // --- SAFETY CHECK (Ab 'user_id' ke liye) ---
+      // Pehle check karein ki 'user_id' field document mein hai ya nahi.
+      if (!professionalData.user_id) {
+        console.warn(`Professional document with ID ${professionalDoc.id} is MISSING the 'user_id' field. Skipping user data merge.`);
+        return professionalData;
+      }
+
+      // 'user_id' ka istemal karke user data fetch karein.
+      const userRef = doc(db, USERS_COLLECTION, professionalData.user_id);
+      const userSnap = await getDoc(userRef);
+
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        // Merge user data (jisme 'name' hai) aur professional data
+        return { ...userData, ...professionalData };
+      } else {
+        console.warn(`No matching user found in 'users' collection for professional with user_id: ${professionalData.user_id}`);
+        return professionalData;
+      }
     });
 
+    const professionals = await Promise.all(mergedDataPromises);
+
     return { professionals, success: true };
+
   } catch (error) {
     console.error('Error getting professionals:', error);
     return { error: error.message, success: false };

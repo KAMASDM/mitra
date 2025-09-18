@@ -140,7 +140,7 @@ const Services = () => {
         {/* Services Grid */}
         <Grid container spacing={4}>
           {services.map((service, index) => (
-            <Grid item xs={12} sm={6} lg={4} key={service.id}>
+            <Grid item  key={service.id} size={{xs:12, sm:6, lg:4}}>
               <MotionCard
                 initial={{ opacity: 0, y: 50 }}
                 animate={{ opacity: 1, y: 0 }}

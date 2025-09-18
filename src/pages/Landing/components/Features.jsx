@@ -140,7 +140,7 @@ const FeaturesSection = () => {
         {/* Platform Features */}
         <Grid container spacing={4} sx={{ mb: 10 }}>
           {platformFeatures.map((feature, index) => (
-            <Grid item xs={12} sm={6} md={3} key={index}>
+            <Grid item  key={index} size={{ xs: 12, sm: 6, md: 3 }}>
               <MotionCard
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -222,7 +222,7 @@ const FeaturesSection = () => {
           
           <Grid container spacing={4}>
             {sessionTypes.map((session, index) => (
-              <Grid item xs={12} md={4} key={index}>
+              <Grid item  key={index} size={{ xs: 12, md: 4 }}>
                 <MotionCard
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -242,8 +242,8 @@ const FeaturesSection = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                       <Box
                         sx={{
-                          width: 60,
-                          height: 60,
+                          width: '4rem',
+                          height: '3rem',
                           borderRadius: '50%',
                           background: alpha(session.color, 0.15),
                           display: 'flex',
@@ -376,8 +376,9 @@ const FeaturesSection = () => {
               <Box
                 sx={{
                   position: 'relative',
-                  height: 400,
-                  borderRadius: 4,
+                  height: 'auto',
+                  width: '500px',
+                  borderRadius: 2,
                   background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.8)}, ${alpha(theme.palette.info.main, 0.8)})`,
                   display: 'flex',
                   alignItems: 'center',
@@ -455,7 +456,7 @@ const FeaturesSection = () => {
           </Typography>
 
           <Grid container spacing={4}>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
               <Box sx={{ textAlign: 'center' }}>
                 <Language sx={{ fontSize: '3rem', color: 'primary.main', mb: 2 }} />
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
@@ -467,7 +468,7 @@ const FeaturesSection = () => {
               </Box>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
               <Box sx={{ textAlign: 'center' }}>
                 <AccessTime sx={{ fontSize: '3rem', color: 'secondary.main', mb: 2 }} />
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
@@ -479,7 +480,7 @@ const FeaturesSection = () => {
               </Box>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
               <Box sx={{ textAlign: 'center' }}>
                 <Star sx={{ fontSize: '3rem', color: 'warning.main', mb: 2 }} />
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
@@ -491,7 +492,7 @@ const FeaturesSection = () => {
               </Box>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
               <Box sx={{ textAlign: 'center' }}>
                 <Support sx={{ fontSize: '3rem', color: 'success.main', mb: 2 }} />
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>

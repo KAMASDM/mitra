@@ -51,13 +51,6 @@ const ClientDashboard = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('loginInfo'));
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!user || !user.user || !user.user.id) {
-      navigate('/login');
-    }
-  }, [user, navigate]);
-
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
   const [recentSessions, setRecentSessions] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
@@ -76,22 +69,45 @@ const ClientDashboard = () => {
         setLoading(true);
         setError('');
 
+        console.log("Fetching dashboard data for user:", user.user.id);
+
         const [upcomingRes, recentRes, recsRes] = await Promise.all([
           getUpcomingBookings(user.user.id, 'client'),
           getUserBookings(user.user.id, 'client', 'completed'),
           getProfessionals({ limit: 3, sortBy: 'rating' })
         ]);
 
-        if (upcomingRes.success) setUpcomingAppointments(upcomingRes.bookings);
-        if (recentRes.success) setRecentSessions(recentRes.bookings);
-        if (recsRes.success) setRecommendations(recsRes.professionals);
+        console.log("Upcoming appointments response:", upcomingRes);
+        console.log("Recent sessions response:", recentRes);
+        console.log("Recommendations response:", recsRes);
 
-        setStats({
-          totalSessions: recentRes.bookings.length,
-          upcoming: upcomingRes.bookings.length,
-          favorites: 8, // Placeholder for favorites feature
-          progress: recentRes.bookings.length > 0 ? (recentRes.bookings.length / 30) * 100 : 0, // Example progress
-        });
+        if (upcomingRes.success) {
+          setUpcomingAppointments(upcomingRes.bookings);
+        } else {
+          setError(upcomingRes.error || 'Could not fetch upcoming appointments.');
+        }
+
+        if (recentRes.success) {
+          setRecentSessions(recentRes.bookings);
+        } else {
+          setError(recentRes.error || 'Could not fetch recent sessions.');
+        }
+
+        if (recsRes.success) {
+          setRecommendations(recsRes.professionals);
+        } else {
+          setError(recsRes.error || 'Could not fetch recommendations.');
+        }
+
+        if (upcomingRes.success && recentRes.success) {
+          setStats({
+            totalSessions: recentRes.bookings.length,
+            upcoming: upcomingRes.bookings.length,
+            favorites: 8, // Placeholder for favorites feature
+            progress: recentRes.bookings.length > 0 ? (recentRes.bookings.length / 30) * 100 : 0, // Example progress
+          });
+        }
+
       } catch (err) {
         setError("Failed to load dashboard data. Please try again.");
         console.error('Dashboard fetch error:', err);
@@ -210,13 +226,13 @@ const ClientDashboard = () => {
                   Recent Sessions
                 </Typography>
                 {recentSessions.length > 0 ? (
-                   <Stack spacing={2}>
+                  <Stack spacing={2}>
                     {recentSessions.map((session) => (
                       <Paper key={session.id} sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-                         <Typography variant="body1">Session with {session.professionalName} on {new Date(session.appointmentDate).toLocaleDateString()}</Typography>
+                        <Typography variant="body1">Session with {session.professionalName} on {new Date(session.appointmentDate).toLocaleDateString()}</Typography>
                       </Paper>
                     ))}
-                   </Stack>
+                  </Stack>
                 ) : (
                   <Typography>No recent sessions.</Typography>
                 )}
@@ -241,11 +257,18 @@ const ClientDashboard = () => {
                     {recommendations.map((prof) => (
                       <Paper key={prof.id} sx={{ p: 2, borderRadius: 2, display: 'flex', alignItems: 'center' }}>
                         <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
-                          {typeof prof.name === 'string' && prof.name.length > 0 ? prof.name.charAt(0) : '?'}
+                          {/* FIX: Use first_name for the avatar initial */}
+                          {prof.first_name?.charAt(0)?.toUpperCase() || '?'}
                         </Avatar>
                         <Box>
-                          <Typography variant="body1" sx={{ fontWeight: 600 }}>{prof.name}</Typography>
-                          <Typography variant="body2" color="text.secondary">{prof.specialization}</Typography>
+                          {/* FIX: Combine first_name and last_name for the full name */}
+                          <Typography variant="body1" sx={{ fontWeight: 600, textTransform: 'capitalize' }}>
+                            {`${prof.first_name || ''} ${prof.last_name || ''}`.trim()}
+                          </Typography>
+                          {/* FIX: Use the specializations array for the specialization text */}
+                          <Typography variant="body2" color="text.secondary">
+                            {prof.specializations?.[0]?.label || 'No Specialization'}
+                          </Typography>
                         </Box>
                       </Paper>
                     ))}

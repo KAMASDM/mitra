@@ -63,7 +63,7 @@ const contactInfo = [
 const ContactSection = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -108,7 +108,7 @@ const ContactSection = () => {
   return (
     <Box
       sx={{
-        py: { xs: 8, md: 12 },
+        // py: { xs: 8, md: 12 },
         bgcolor: 'background.default',
       }}
     >
@@ -141,13 +141,13 @@ const ContactSection = () => {
               lineHeight: 1.6,
             }}
           >
-            Have questions? We're here to help! Reach out to us and we'll get back to you 
+            Have questions? We're here to help! Reach out to us and we'll get back to you
             as soon as possible.
           </Typography>
         </MotionBox>
 
         {/* Contact Info Cards */}
-        <Grid container spacing={4} sx={{ mb: 8 }}>
+        <Grid container spacing={4} sx={{ mb: 8, justifyContent: 'center' }}>
           {contactInfo.map((info, index) => (
             <Grid item xs={12} sm={6} md={3} key={index}>
               <MotionCard
@@ -218,7 +218,7 @@ const ContactSection = () => {
         </Grid>
 
         {/* Contact Form and CTA */}
-        <Grid container spacing={6}>
+        <Grid container spacing={6} justifyContent="center">
           {/* Contact Form */}
           <Grid item xs={12} md={8}>
             <MotionCard
@@ -248,7 +248,7 @@ const ContactSection = () => {
                     lineHeight: 1.6,
                   }}
                 >
-                  Whether you have questions about our services, need technical support, 
+                  Whether you have questions about our services, need technical support,
                   or want to provide feedback, we'd love to hear from you.
                 </Typography>
 
@@ -267,7 +267,7 @@ const ContactSection = () => {
                 <form onSubmit={handleSubmit}>
                   <Stack spacing={3}>
                     <Grid container spacing={2}>
-                      <Grid item xs={12} sm={6}>
+                      <Grid item size={{ xs: 12, sm: 6 }}>
                         <TextField
                           fullWidth
                           name="name"
@@ -277,7 +277,7 @@ const ContactSection = () => {
                           required
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6}>
+                      <Grid item size={{ xs: 12, sm: 6 }}>
                         <TextField
                           fullWidth
                           name="email"
@@ -289,7 +289,7 @@ const ContactSection = () => {
                         />
                       </Grid>
                     </Grid>
-                    
+
                     <TextField
                       fullWidth
                       name="message"
@@ -301,7 +301,7 @@ const ContactSection = () => {
                       required
                       placeholder="Tell us how we can help you..."
                     />
-                    
+
                     <Button
                       type="submit"
                       variant="contained"
@@ -326,40 +326,26 @@ const ContactSection = () => {
           </Grid>
 
           {/* Quick Actions Sidebar */}
-          <Grid item xs={12} md={4}>
-            <Stack spacing={4}>
-              {/* Get Started CTA */}
+          <Grid container spacing={2}>
+            {/* Card 1 */}
+            <Grid item size={{ xs: 12, md: 4 }}>
               <MotionCard
                 initial={{ opacity: 0, x: 30 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8, delay: 0.2 }}
                 sx={{
-                  borderRadius: 3,
+                  borderRadius: 3, height: '100%',
                   background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)}, ${alpha(theme.palette.secondary.main, 0.1)})`,
                 }}
               >
                 <CardContent sx={{ p: 4, textAlign: 'center' }}>
                   <Support sx={{ fontSize: '3rem', color: 'primary.main', mb: 2 }} />
-                  <Typography
-                    variant="h5"
-                    sx={{
-                      fontWeight: 700,
-                      color: 'text.primary',
-                      mb: 2,
-                    }}
-                  >
+                  <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary', mb: 2 }}>
                     Ready to Get Started?
                   </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: 'text.secondary',
-                      mb: 3,
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    Join thousands of people who have found the right professional support 
+                  <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3, lineHeight: 1.6 }}>
+                    Join thousands of people who have found the right professional support
                     through our platform.
                   </Typography>
                   <Button
@@ -368,91 +354,60 @@ const ContactSection = () => {
                     size="large"
                     endIcon={<ArrowForward />}
                     onClick={() => navigate('/register')}
-                    sx={{
-                      py: 1.5,
-                      borderRadius: 2,
-                      fontWeight: 600,
-                    }}
+                    sx={{ py: 1.5, borderRadius: 2, fontWeight: 600 }}
                   >
                     Sign Up Now
                   </Button>
                 </CardContent>
               </MotionCard>
+            </Grid>
 
-              {/* Browse Professionals CTA */}
+            {/* Card 2 */}
+            <Grid item size={{ xs: 12, md: 4 }}>
               <MotionCard
                 initial={{ opacity: 0, x: 30 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8, delay: 0.4 }}
-                sx={{ borderRadius: 3 }}
+                sx={{ borderRadius: 3, height: '100%' }}
               >
                 <CardContent sx={{ p: 4, textAlign: 'center' }}>
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      fontWeight: 700,
-                      color: 'text.primary',
-                      mb: 2,
-                    }}
-                  >
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary', mb: 2 }}>
                     Browse Professionals
                   </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: 'text.secondary',
-                      mb: 3,
-                    }}
-                  >
+                  <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
                     Explore our directory of verified professionals and find the right fit for your needs.
                   </Typography>
                   <Button
                     variant="outlined"
                     fullWidth
                     onClick={() => navigate('/experts')}
-                    sx={{
-                      py: 1.5,
-                      borderRadius: 2,
-                      fontWeight: 600,
-                    }}
+                    sx={{ py: 1.5, borderRadius: 2, fontWeight: 600 }}
                   >
                     View Professionals
                   </Button>
                 </CardContent>
               </MotionCard>
+            </Grid>
 
-              {/* Emergency Support */}
+            {/* Card 3 */}
+            <Grid item size={{ xs: 12, md: 4 }}>
               <MotionCard
                 initial={{ opacity: 0, x: 30 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8, delay: 0.6 }}
                 sx={{
-                  borderRadius: 3,
+                  borderRadius: 3, height: '100%',
                   background: alpha(theme.palette.error.main, 0.05),
                   border: `1px solid ${alpha(theme.palette.error.main, 0.2)}`,
                 }}
               >
                 <CardContent sx={{ p: 4 }}>
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      fontWeight: 700,
-                      color: 'error.main',
-                      mb: 2,
-                    }}
-                  >
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: 'error.main', mb: 2 }}>
                     Need Immediate Help?
                   </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: 'text.secondary',
-                      mb: 3,
-                      lineHeight: 1.6,
-                    }}
-                  >
+                  <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3, lineHeight: 1.6 }}>
                     If you're experiencing a crisis or emergency, please reach out to these resources immediately:
                   </Typography>
                   <Stack spacing={2}>
@@ -471,8 +426,9 @@ const ContactSection = () => {
                   </Stack>
                 </CardContent>
               </MotionCard>
-            </Stack>
+            </Grid>
           </Grid>
+
         </Grid>
 
         {/* Final CTA */}
@@ -509,12 +465,12 @@ const ContactSection = () => {
               mx: 'auto',
             }}
           >
-            Take the first step towards getting the professional support you deserve. 
+            Take the first step towards getting the professional support you deserve.
             Safe, inclusive, and judgment-free care is just a click away.
           </Typography>
-          <Stack 
-            direction={{ xs: 'column', sm: 'row' }} 
-            spacing={2} 
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={2}
             sx={{ justifyContent: 'center' }}
           >
             <Button

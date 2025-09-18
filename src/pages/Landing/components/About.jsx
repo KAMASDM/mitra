@@ -96,8 +96,8 @@ const About = () => {
               lineHeight: 1.6,
             }}
           >
-            SWEEKAR (स्वीकार) means "acceptance" in Hindi. We're building a platform that truly accepts 
-            and supports everyone, providing safe, inclusive professional services for the LGBTQAI+ 
+            SWEEKAR (स्वीकार) means "acceptance" in Hindi. We're building a platform that truly accepts
+            and supports everyone, providing safe, inclusive professional services for the LGBTQAI+
             community and women.
           </Typography>
         </MotionBox>
@@ -114,8 +114,8 @@ const About = () => {
             <Grid item xs={12} md={6}>
               <Box
                 sx={{
-                  height: 400,
-                  borderRadius: 4,
+                  height: 250,
+                  borderRadius: 2,
                   background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.8)}, ${alpha(theme.palette.secondary.main, 0.8)})`,
                   display: 'flex',
                   alignItems: 'center',
@@ -180,9 +180,9 @@ const About = () => {
                   fontSize: '1.1rem',
                 }}
               >
-                We understand that finding the right professional who truly understands your unique 
-                experiences can be challenging. That's why we've created SWEEKAR - a platform that 
-                connects you with verified professionals who are not just qualified, but also 
+                We understand that finding the right professional who truly understands your unique
+                experiences can be challenging. That's why we've created SWEEKAR - a platform that
+                connects you with verified professionals who are not just qualified, but also
                 committed to providing inclusive, judgment-free care.
               </Typography>
               <Typography
@@ -193,8 +193,8 @@ const About = () => {
                   fontSize: '1.1rem',
                 }}
               >
-                Whether you're seeking mental health support, legal guidance, medical care, or 
-                career counseling, our platform ensures you receive the respectful, understanding 
+                Whether you're seeking mental health support, legal guidance, medical care, or
+                career counseling, our platform ensures you receive the respectful, understanding
                 service you deserve in a safe and supportive environment.
               </Typography>
             </Grid>
@@ -221,67 +221,70 @@ const About = () => {
           >
             Our Core Values
           </Typography>
-          
-          <Grid container spacing={4}>
-            {values.map((value, index) => (
-              <Grid item xs={12} sm={6} md={3} key={index}>
-                <MotionCard
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  whileHover={{ y: -8, scale: 1.02 }}
-                  sx={{
-                    height: '100%',
-                    borderRadius: 3,
-                    border: `2px solid ${alpha(value.color, 0.1)}`,
-                    '&:hover': {
-                      borderColor: value.color,
-                      boxShadow: `0 15px 35px ${alpha(value.color, 0.2)}`,
-                    },
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  <CardContent sx={{ p: 4, textAlign: 'center', height: '100%' }}>
-                    <Box
-                      sx={{
-                        width: 80,
-                        height: 80,
-                        borderRadius: '50%',
-                        background: alpha(value.color, 0.1),
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        margin: '0 auto 20px',
-                        color: value.color,
-                      }}
-                    >
-                      {value.icon}
-                    </Box>
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        fontWeight: 700,
-                        color: 'text.primary',
-                        mb: 2,
-                      }}
-                    >
-                      {value.title}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        color: 'text.secondary',
-                        lineHeight: 1.6,
-                      }}
-                    >
-                      {value.description}
-                    </Typography>
-                  </CardContent>
-                </MotionCard>
-              </Grid>
-            ))}
-          </Grid>
+          <Container maxWidth="xl" sx={{ mt: 8 }}>
+            <Grid container spacing={4}>
+              {values.map((value, index) => (
+                <Grid item key={index} sx={{ display: 'flex', justifyContent: 'center' }} size={{ xs: 12, md: 3, sm: 6 }}>
+                  <MotionCard
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, delay: index * 0.1 }}
+                    whileHover={{ y: -8, scale: 1.02 }}
+                    sx={{
+                      height: '100%',
+                      maxWidth: 280,
+                      borderRadius: 3,
+                      border: `2px solid ${alpha(value.color, 0.1)}`,
+                      '&:hover': {
+                        borderColor: value.color,
+                        boxShadow: `0 15px 35px ${alpha(value.color, 0.2)}`,
+                      },
+                      transition: 'all 0.3s ease',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <CardContent sx={{ p: 2, textAlign: 'center', height: '100%', mx: 'auto', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      <Box
+                        sx={{
+                          width: 80,
+                          height: 80,
+                          borderRadius: '50%',
+                          background: alpha(value.color, 0.1),
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          margin: '0 auto 20px',
+                          color: value.color,
+                        }}
+                      >
+                        {value.icon}
+                      </Box>
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          fontWeight: 700,
+                          color: 'text.primary',
+                          mb: 2,
+                        }}
+                      >
+                        {value.title}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: 'text.secondary',
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        {value.description}
+                      </Typography>
+                    </CardContent>
+                  </MotionCard>
+                </Grid>
+              ))}
+            </Grid>
+          </Container>
         </MotionBox>
 
         {/* Statistics Section */}
@@ -309,10 +312,10 @@ const About = () => {
           >
             Our Impact
           </Typography>
-          
-          <Grid container spacing={4}>
+
+          <Grid container spacing={4} alignItems="center" justifyContent="center">
             {stats.map((stat, index) => (
-              <Grid item xs={6} md={3} key={index}>
+              <Grid item xs={6} md={3} key={index} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 <MotionBox
                   initial={{ opacity: 0, scale: 0.8 }}
                   whileInView={{ opacity: 1, scale: 1 }}
@@ -376,8 +379,8 @@ const About = () => {
                   fontSize: '1.1rem',
                 }}
               >
-                Unlike traditional platforms, SWEEKAR is built specifically with the LGBTQAI+ 
-                community and women in mind. Every professional on our platform has been 
+                Unlike traditional platforms, SWEEKAR is built specifically with the LGBTQAI+
+                community and women in mind. Every professional on our platform has been
                 trained in inclusive care and understands the unique challenges you may face.
               </Typography>
               <Typography
@@ -388,15 +391,15 @@ const About = () => {
                   fontSize: '1.1rem',
                 }}
               >
-                We're not just a directory - we're a community that believes everyone deserves 
+                We're not just a directory - we're a community that believes everyone deserves
                 access to professional services without fear of discrimination or judgment.
               </Typography>
             </Grid>
             <Grid item xs={12} md={6}>
               <Box
                 sx={{
-                  height: 400,
-                  borderRadius: 4,
+                  height: 250,
+                  borderRadius: 2,
                   background: `linear-gradient(45deg, ${alpha(theme.palette.info.main, 0.8)}, ${alpha(theme.palette.success.main, 0.8)})`,
                   display: 'flex',
                   alignItems: 'center',
