@@ -1,346 +1,518 @@
-  import React, { useState, useEffect } from 'react';
-  import {
-    Box,
-    Container,
-    Typography,
-    Grid,
-    Card,
-    CardContent,
-    Avatar,
-    Chip,
-    Button,
-    TextField,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    Rating,
-    Stack,
-    IconButton,
-    useTheme,
-    alpha,
-    CircularProgress,
-    Paper,
-    InputAdornment,
-    List,
-    ListItem,
-    ListItemAvatar,
-    ListItemText,
-  } from '@mui/material';
-  import { motion } from 'framer-motion';
-  import { useNavigate } from 'react-router-dom';
-  import {
-    Search,
-    Verified,
-    Star,
-    Favorite,
-    FavoriteBorder,
-    Apps, // Grid view icon
-    ViewList, // List view icon
-  } from '@mui/icons-material';
-  import { getProfessionals } from '../../services/userService';
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Container,
+  Typography,
+  Grid,
+  Card,
+  CardContent,
+  Avatar,
+  Chip,
+  Button,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Stack,
+  IconButton,
+  useTheme,
+  alpha,
+  CircularProgress,
+  Paper,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  Pagination,
+  Divider,
+} from '@mui/material';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import {
+  Search,
+  Apps, // Grid view icon
+  ViewList, // List view icon
+} from '@mui/icons-material';
+import { getProfessionals, getProfessionalsCount } from '../../services/userService';
+
+const MotionCard = motion(Card);
+
+const categories = ['All', 'Mental Health', 'Legal Aid', 'Medical Services', 'Career & Placement', 'Financial Guidance'];
+
+const Experts = () => {
+  const theme = useTheme();
+  const navigate = useNavigate();
   
-  const MotionCard = motion(Card);
+  // Data state
+  const [allProfessionals, setAllProfessionals] = useState([]);
+  const [filteredProfessionals, setFilteredProfessionals] = useState([]);
   
-  const categories = ['All', 'Mental Health', 'Legal Aid', 'Medical Services', 'Career & Placement', 'Financial Guidance'];
+  // Loading and error state
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   
-  const Experts = () => {
-    const theme = useTheme();
-    const navigate = useNavigate();
-    const [allProfessionals, setAllProfessionals] = useState([]);
-    const [filteredProfessionals, setFilteredProfessionals] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState('All');
-    const [sortBy, setSortBy] = useState('rating');
-    const [favorites, setFavorites] = useState(new Set());
-    const [viewMode, setViewMode] = useState('grid'); // New state for view mode
+  // Filter state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [sortBy, setSortBy] = useState('newest'); // Changed default
   
-    useEffect(() => {
-      const fetchProfessionals = async () => {
-        setLoading(true);
-        setError('');
-        try {
-          const result = await getProfessionals({
-            verified: true,
-            category: selectedCategory,
-            sortBy: sortBy,
-          });
-          console.log('Fetched professionals:', result);
-          if (result.success) {
-            setAllProfessionals(result.professionals);
-            setFilteredProfessionals(result.professionals);
-          } else {
-            setError(result.error || 'Failed to fetch professionals.');
-          }
-        } catch (err) {
-          setError('An error occurred while fetching professionals.');
-          console.error(err);
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchProfessionals();
-    }, [selectedCategory, sortBy]);
+  // UI state
+  const [favorites, setFavorites] = useState(new Set());
+  const [viewMode, setViewMode] = useState('grid');
   
-    useEffect(() => {
-      if (!searchTerm) {
-        setFilteredProfessionals(allProfessionals);
-        return;
-      }
-      const lowerCaseSearchTerm = searchTerm.toLowerCase();
-      const results = allProfessionals.filter(professional => {
-        const hasNameMatch = (professional.name?.toLowerCase() ?? '').includes(lowerCaseSearchTerm);
-        const hasSpecializationMatch = (professional.specialization?.toLowerCase() ?? '').includes(lowerCaseSearchTerm);
-        const hasSpecialtyMatch = professional.specialties?.some(specialty =>
-          (specialty?.toLowerCase() ?? '').includes(lowerCaseSearchTerm)
-        );
-        return hasNameMatch || hasSpecializationMatch || hasSpecialtyMatch;
+  // Pagination state - simplified
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const itemsPerPage = 12;
+
+  // Calculate total pages
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+  // Fetch ALL professionals once and filter client-side (NO INDEXES NEEDED!)
+  const fetchProfessionals = async () => {
+    setLoading(true);
+    setError('');
+    setCurrentPage(1);
+    
+    try {
+      // Simple fetch - get all verified professionals
+      const result = await getProfessionals({
+        // No filters here - get all verified professionals
+        pageSize: 100 // Get more items for better client-side filtering
       });
-      setFilteredProfessionals(results);
-    }, [searchTerm, allProfessionals]);
-  
-    const toggleFavorite = (professionalId) => {
-      const newFavorites = new Set(favorites);
-      if (newFavorites.has(professionalId)) {
-        newFavorites.delete(professionalId);
+
+      console.log('Fetched professionals:', result);
+      
+      if (result.success) {
+        setAllProfessionals(result.professionals);
+        // Apply all filters immediately
+        applyAllFilters(result.professionals);
       } else {
-        newFavorites.add(professionalId);
+        setError(result.error || 'Failed to fetch professionals.');
       }
-      setFavorites(newFavorites);
-    };
-  
-    return (
-      <Box sx={{ py: 8, bgcolor: 'background.default', minHeight: '100vh' }}>
-        <Container maxWidth="xl" style={{ position: 'relative', justifyContent: 'center' }}>
-          <Box sx={{ textAlign: 'center', mb: 6 }}>
-            <Typography variant="h2" component="h1" sx={{ fontWeight: 800, color: 'text.primary', mb: 2 }}>
-              Find Your Expert
-            </Typography>
-            <Typography variant="h6" sx={{ color: 'text.secondary', maxWidth: '600px', mx: 'auto', lineHeight: 1.6 }}>
-              Connect with verified professionals who understand your unique needs and provide safe, inclusive support.
-            </Typography>
-          </Box>
-  
-          {/* Search and Filter Section with View Toggles */}
-          <Box sx={{ mb: 6, p: 4, borderRadius: 3, bgcolor: 'background.paper', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)' }}>
-            <Grid container spacing={3} alignItems="center" justifyContent="space-between" position='relative'>
-              <Grid item xs={12} md={10}>
-                <Grid container spacing={2} alignItems="center">
-                  <Grid item xs={12} md={4}>
-                    <TextField
-                      fullWidth
-                      placeholder="Search by name, specialization, or expertise..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      InputProps={{
-                        startAdornment: <Search sx={{ color: 'text.secondary', mr: 1 }} />,
-                      }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={4}>
-                    <FormControl fullWidth sx={{ minWidth: 150 }}>
-                      <InputLabel>Category</InputLabel>
-                      <Select value={selectedCategory} label="Category" onChange={(e) => setSelectedCategory(e.target.value)}>
-                        {categories.map((category) => (
-                          <MenuItem key={category} value={category}>{category}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={4}>
-                    <FormControl fullWidth>
-                      <InputLabel>Sort By</InputLabel>
-                      <Select value={sortBy} label="Sort By" onChange={(e) => setSortBy(e.target.value)}>
-                        <MenuItem value="rating">Highest Rated</MenuItem>
-                        <MenuItem value="price">Price: Low to High</MenuItem>
-                        <MenuItem value="experience">Most Experienced</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                </Grid>
-              </Grid>
-              {/* Right side: View Toggles */}
-              <Grid item xs={12} md={2}>
-                {/* This is the new container for the view icons */}
-                <Stack 
-                  direction="row" 
-                  spacing={1} 
-                  alignItems="center" 
-                  justifyContent="flex-end"
+    } catch (err) {
+      setError('An error occurred while fetching professionals.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Apply all filters and sorting client-side
+  const applyAllFilters = (professionals = allProfessionals) => {
+    let filtered = [...professionals];
+
+    // Apply category filter
+    if (selectedCategory && selectedCategory !== 'All') {
+      filtered = filtered.filter(prof => prof.category === selectedCategory);
+    }
+
+    // Apply search filter
+    if (searchTerm) {
+      const lowerCaseSearchTerm = searchTerm.toLowerCase();
+      filtered = filtered.filter(professional => {
+        const hasNameMatch = (professional.first_name?.toLowerCase() ?? '').includes(lowerCaseSearchTerm) ||
+                            (professional.last_name?.toLowerCase() ?? '').includes(lowerCaseSearchTerm);
+        const hasSpecializationMatch = professional.specializations?.some(spec =>
+          (spec.label?.toLowerCase() ?? '').includes(lowerCaseSearchTerm)
+        );
+        const hasCategoryMatch = (professional.category?.toLowerCase() ?? '').includes(lowerCaseSearchTerm);
+        return hasNameMatch || hasSpecializationMatch || hasCategoryMatch;
+      });
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'price':
+          return (a.price || 0) - (b.price || 0); // ascending
+        case 'experience':
+          return (b.years_of_experience || 0) - (a.years_of_experience || 0); // descending
+        case 'newest':
+        default:
+          // Sort by createdAt if available
+          const aDate = a.createdAt?.toDate?.() || new Date(0);
+          const bDate = b.createdAt?.toDate?.() || new Date(0);
+          return bDate - aDate; // descending (newest first)
+      }
+    });
+
+    setFilteredProfessionals(filtered);
+    setTotalCount(filtered.length);
+    setCurrentPage(1); // Reset to first page when filters change
+  };
+
+  // Apply search filter to current data
+  const applySearchFilter = (professionals = allProfessionals) => {
+    // This function is now handled by applyAllFilters
+    applyAllFilters(professionals);
+  };
+
+  // Handle page change - much simpler now
+  const handlePageChange = (event, page) => {
+    setCurrentPage(page);
+  };
+
+  // Get professionals for current page
+  const getCurrentPageProfessionals = () => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredProfessionals.slice(startIndex, endIndex);
+  };
+
+  // Effect for initial load
+  useEffect(() => {
+    fetchProfessionals();
+  }, []); // Only run once on mount
+
+  // Effect for filter changes - apply client-side filtering
+  useEffect(() => {
+    if (allProfessionals.length > 0) {
+      applyAllFilters();
+    }
+  }, [selectedCategory, sortBy, searchTerm]);
+
+  const toggleFavorite = (professionalId) => {
+    const newFavorites = new Set(favorites);
+    if (newFavorites.has(professionalId)) {
+      newFavorites.delete(professionalId);
+    } else {
+      newFavorites.add(professionalId);
+    }
+    setFavorites(newFavorites);
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setSelectedCategory('All');
+    setSortBy('newest');
+    setCurrentPage(1);
+  };
+
+  return (
+    <Box sx={{ 
+      py: 8, 
+      bgcolor: 'background.default', 
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center'
+    }}>
+      <Container 
+        maxWidth="lg" 
+        sx={{ 
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          width: '100%'
+        }}
+      >
+        {/* Header Section - Centered */}
+        <Box sx={{ textAlign: 'center', mb: 6 }}>
+          <Typography variant="h2" component="h1" sx={{ fontWeight: 800, color: 'text.primary', mb: 2 }}>
+            Find Your Expert
+          </Typography>
+          <Typography variant="h6" sx={{ 
+            color: 'text.secondary', 
+            lineHeight: 1.6,
+            maxWidth: '600px',
+            mx: 'auto'
+          }}>
+            Connect with verified professionals who understand your unique needs and provide safe, inclusive support.
+          </Typography>
+        </Box>
+
+        {/* Search and Filter Section - Centered */}
+        <Box sx={{ 
+          mb: 6, 
+          p: { xs: 3, md: 4 }, 
+          borderRadius: 3, 
+          bgcolor: 'background.paper', 
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+          width: '100%',
+          maxWidth: '900px'
+        }}>
+          <Stack spacing={3} alignItems="center">
+            {/* Search Bar - Full Width */}
+            <Box sx={{ width: '100%', maxWidth: '400px' }}>
+              <TextField
+                fullWidth
+                placeholder="Search by name, specialization, or expertise..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: <Search sx={{ color: 'text.secondary', mr: 1 }} />,
+                }}
+              />
+            </Box>
+            
+            {/* Filters Row */}
+            <Stack 
+              direction={{ xs: 'column', sm: 'row' }} 
+              spacing={2} 
+              alignItems="center" 
+              justifyContent="center"
+              sx={{ width: '100%' }}
+            >
+              <FormControl sx={{ minWidth: 150 }}>
+                <InputLabel>Category</InputLabel>
+                <Select 
+                  value={selectedCategory} 
+                  label="Category" 
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                >
+                  {categories.map((category) => (
+                    <MenuItem key={category} value={category}>{category}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              
+              <FormControl sx={{ minWidth: 150 }}>
+                <InputLabel>Sort By</InputLabel>
+                <Select value={sortBy} label="Sort By" onChange={(e) => setSortBy(e.target.value)}>
+                  <MenuItem value="newest">Newest First</MenuItem>
+                  <MenuItem value="price">Price: Low to High</MenuItem>
+                  <MenuItem value="experience">Most Experienced</MenuItem>
+                </Select>
+              </FormControl>
+              
+              {/* View Toggle */}
+              <Stack 
+                direction="row" 
+                spacing={1} 
+                alignItems="center"
+                sx={{
+                  border: `1px solid ${alpha(theme.palette.text.primary, 0.1)}`,
+                  borderRadius: '50px',
+                  ml: { sm: 2 }
+                }}
+              >
+                <IconButton
+                  onClick={() => setViewMode('grid')}
                   sx={{
-                    border: `1px solid ${alpha(theme.palette.text.primary, 0.1)}`,
-                    borderRadius: '50px',
-                    // p: 0.5,
-                    width: 'fit-content',
-                    ml: 'auto',
+                    borderRadius: '50%',
+                    bgcolor: viewMode === 'grid' ? theme.palette.primary.main : 'transparent',
+                    color: viewMode === 'grid' ? theme.palette.common.white : theme.palette.text.secondary,
+                    border: viewMode === 'grid' ? `2px solid ${theme.palette.primary.main}` : '2px solid transparent',
+                    '&:hover': {
+                      bgcolor: viewMode === 'grid' ? theme.palette.primary.dark : alpha(theme.palette.primary.main, 0.1),
+                    },
+                    p: '8px',
+                    transition: 'all 0.3s ease-in-out',
                   }}
                 >
-                  <IconButton
-                    onClick={() => setViewMode('grid')}
-                    sx={{
-                      borderRadius: '50%',
-                      bgcolor: viewMode === 'grid' ? theme.palette.primary.main : 'transparent',
-                      color: viewMode === 'grid' ? theme.palette.common.white : theme.palette.text.secondary,
-                      border: viewMode === 'grid' ? `2px solid ${theme.palette.primary.main}` : '2px solid transparent',
-                      '&:hover': {
-                        bgcolor: viewMode === 'grid' ? theme.palette.primary.dark : alpha(theme.palette.primary.main, 0.1),
-                      },
-                      p: '8px',
-                      transition: 'all 0.3s ease-in-out',
-                    }}
-                  >
-                    <Apps />
-                  </IconButton>
-                  <IconButton
-                    onClick={() => setViewMode('list')}
-                    sx={{
-                      borderRadius: '50%',
-                      bgcolor: viewMode === 'list' ? theme.palette.primary.main : 'transparent',
-                      color: viewMode === 'list' ? theme.palette.common.white : theme.palette.text.secondary,
-                      border: viewMode === 'list' ? `2px solid ${theme.palette.primary.main}` : '2px solid transparent',
-                      '&:hover': {
-                        bgcolor: viewMode === 'list' ? theme.palette.primary.dark : alpha(theme.palette.primary.main, 0.1),
-                      },
-                      p: '8px',
-                      transition: 'all 0.3s ease-in-out',
-                    }}
-                  >
-                    <ViewList />
-                  </IconButton>
-                </Stack>
-              </Grid>
-            </Grid>
+                  <Apps />
+                </IconButton>
+                <IconButton
+                  onClick={() => setViewMode('list')}
+                  sx={{
+                    borderRadius: '50%',
+                    bgcolor: viewMode === 'list' ? theme.palette.primary.main : 'transparent',
+                    color: viewMode === 'list' ? theme.palette.common.white : theme.palette.text.secondary,
+                    border: viewMode === 'list' ? `2px solid ${theme.palette.primary.main}` : '2px solid transparent',
+                    '&:hover': {
+                      bgcolor: viewMode === 'list' ? theme.palette.primary.dark : alpha(theme.palette.primary.main, 0.1),
+                    },
+                    p: '8px',
+                    transition: 'all 0.3s ease-in-out',
+                  }}
+                >
+                  <ViewList />
+                </IconButton>
+              </Stack>
+            </Stack>
+          </Stack>
+        </Box>
+
+        {/* Results Info - Centered */}
+        {!loading && !error && (
+          <Box sx={{ mb: 3, textAlign: 'center' }}>
+            <Typography variant="body1" color="text.secondary">
+              Showing {getCurrentPageProfessionals().length} of {filteredProfessionals.length} professionals
+              {selectedCategory !== 'All' && ` in ${selectedCategory}`}
+            </Typography>
           </Box>
-  
-          {/* Professionals Display Section */}
+        )}
+
+        {/* Professionals Display Section - Centered */}
+        <Box sx={{ width: '100%', maxWidth: '1000px' }}>
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-              <CircularProgress />
+              <CircularProgress size={60} />
             </Box>
           ) : error ? (
-            <Typography color="error" sx={{ textAlign: 'center', p: 4, bgcolor: 'rgba(255,0,0,0.05)', borderRadius: 2, maxWidth: '100%', wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap' }}>
-              {error.toString()}
-              <br />
-              If this is an index error, please ensure you have created the necessary composite indexes in your Firestore database.
-            </Typography>
+            <Paper sx={{ p: 4, textAlign: 'center', maxWidth: '600px', mx: 'auto' }}>
+              <Typography color="error" variant="h6" sx={{ mb: 2 }}>
+                Error Loading Professionals
+              </Typography>
+              <Typography color="error" sx={{ mb: 3, whiteSpace: 'pre-wrap' }}>
+                {error}
+              </Typography>
+              <Button variant="contained" onClick={() => fetchProfessionals()}>
+                Retry
+              </Button>
+            </Paper>
           ) : filteredProfessionals.length === 0 ? (
-            <Box sx={{ textAlign: 'center', py: 8 }}>
+            <Paper sx={{ p: 6, textAlign: 'center', maxWidth: '600px', mx: 'auto' }}>
               <Typography variant="h6" sx={{ color: 'text.secondary', mb: 2 }}>
                 No professionals found matching your criteria
               </Typography>
               <Button
                 variant="outlined"
-                onClick={() => {
-                  setSearchTerm('');
-                  setSelectedCategory('All');
-                  setSortBy('rating');
-                }}
+                onClick={handleClearFilters}
+                sx={{ mt: 2 }}
               >
-                Clear Filters
+                Clear All Filters
               </Button>
-            </Box>
+            </Paper>
           ) : (
-            viewMode === 'grid' ? (
-              <Grid container spacing={4} mb={4}>
-                {filteredProfessionals.map((professional, index) => (
-                  <Grid item key={professional.id} size={{ xs: 12, sm: 6, md: 4 }}>
+            <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              {viewMode === 'grid' ? (
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexWrap: 'wrap', 
+                  gap: 3, 
+                  justifyContent: 'center',
+                  width: '100%'
+                }}>
+                  {getCurrentPageProfessionals().map((professional, index) => (
+                    <Box key={professional.id} sx={{ width: { xs: '100%', sm: '280px', md: '280px' } }}>
+                      <MotionCard
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: index * 0.1 }}
+                        sx={{
+                          height: '100%',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          borderRadius: 3,
+                          overflow: 'visible',
+                          position: 'relative',
+                          '&:hover': {
+                            transform: 'translateY(-8px)',
+                            boxShadow: '0 15px 35px rgba(0, 0, 0, 0.15)',
+                          },
+                          transition: 'all 0.3s ease',
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => navigate(`/professional/${professional.id}`)}
+                      >
+                        <CardContent sx={{ flexGrow: 1, p: 3 }}>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                            <Avatar sx={{ width: 80, height: 80, mb: 2, bgcolor: 'primary.light', fontSize: '2rem' }}>
+                              {professional?.first_name?.charAt(0)?.toUpperCase() ?? 'P'}
+                            </Avatar>
+                            
+                            <Typography variant="h6" sx={{ 
+                              fontWeight: 700, 
+                              mb: 1,
+                              wordBreak: 'break-word', 
+                              textTransform: 'capitalize',
+                              minHeight: '32px'
+                            }}>
+                              {`${professional?.first_name?.toLowerCase() || ''} ${professional?.last_name?.toLowerCase() || ''}`.trim() || 'Unnamed Professional'}
+                            </Typography>
+                            
+                            <Typography variant="body2" color="primary" sx={{ 
+                              mb: 2, 
+                              minHeight: '40px',
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}>
+                              {professional?.specializations?.[0]?.label ?? 'No Specialization'}
+                            </Typography>
+                            
+                            {professional?.category && (
+                              <Chip 
+                                label={professional.category.replace(/_/g, ' ')} 
+                                size="small" 
+                                sx={{ textTransform: 'capitalize' }} 
+                              />
+                            )}
+                          </Box>
+                        </CardContent>
+                      </MotionCard>
+                    </Box>
+                  ))}
+                </Box>
+              ) : (
+                <Box sx={{ width: '100%', maxWidth: '700px' }}>
+                  {getCurrentPageProfessionals().map((professional, index) => (
                     <MotionCard
-                      initial={{ opacity: 0, y: 30 }}
-                      animate={{ opacity: 1, y: 0 }}
+                      key={professional.id}
+                      component={motion.div}
+                      initial={{ opacity: 0, x: -50 }}
+                      animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.5, delay: index * 0.1 }}
                       sx={{
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
+                        mb: 2,
+                        p: 3,
                         borderRadius: 3,
-                        overflow: 'visible',
-                        position: 'relative',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                        transition: 'box-shadow 0.3s ease',
                         '&:hover': {
-                          transform: 'translateY(-8px)',
-                          boxShadow: '0 15px 35px rgba(0, 0, 0, 0.15)',
+                          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.1)',
                         },
-                        transition: 'all 0.3s ease',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
                       }}
+                      onClick={() => navigate(`/professional/${professional.id}`)}
                     >
-                      <CardContent sx={{ flexGrow: 1, p: 3, mb: 2 }}>
-                        <Avatar sx={{ width: 80, height: 80, mb: 2, bgcolor: 'primary.light' }}>
-                          {professional?.first_name?.charAt(0)?.toUpperCase() ?? 'P'}
-                        </Avatar>
-                        <Typography variant="h6" sx={{ fontWeight: 700, minHeight: '32px', wordBreak: 'break-word', textTransform: 'capitalize' }}>
-                          {`${professional?.first_name?.toLowerCase() || ''} ${professional?.last_name?.toLowerCase() || ''}`.trim() || 'Unnamed Professional'}
-                        </Typography>
-                        <Typography variant="body1" color="primary" sx={{ mb: 1, minHeight: '24px', wordBreak: 'break-word' }}>
-                          {professional?.specializations?.[0]?.label ?? 'No Specialization'}
-                        </Typography>
-                        {professional?.domain && (
-                          <Chip label={professional.domain.replace(/_/g, ' ')} size="small" sx={{ mt: 2, textTransform: 'capitalize' }} />
-                        )}
-                      </CardContent>
-                    </MotionCard>
-                  </Grid>
-                ))}
-              </Grid>
-            ) : (
-              <List sx={{ width: '100%', p: 0 }}>
-                {filteredProfessionals.map((professional, index) => (
-                  <ListItem
-                    key={professional.id}
-                    component={motion.div}
-                    initial={{ opacity: 0, x: -50 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                    sx={{
-                      mb: 2,
-                      p: 2,
-                      borderRadius: 3,
-                      bgcolor: 'background.paper',
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-                      transition: 'box-shadow 0.3s ease',
-                      '&:hover': {
-                        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.1)',
-                      },
-                      width: '100%',
-                      mx: 'auto', 
-                    }}
-                  >
-                    <ListItemAvatar>
-                      <Avatar sx={{ width: 60, height: 60, bgcolor: 'primary.light' }}>
+                      <Avatar sx={{ width: 60, height: 60, bgcolor: 'primary.light', fontSize: '1.5rem', mr: 3 }}>
                         {professional?.first_name?.charAt(0)?.toUpperCase() ?? 'P'}
                       </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary={
-                        <Typography variant="h6" sx={{ fontWeight: 600, textTransform: 'capitalize' }}>
+                      
+                      <Box sx={{ flexGrow: 1 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 600, textTransform: 'capitalize', mb: 0.5 }}>
                           {`${professional?.first_name?.toLowerCase() || ''} ${professional?.last_name?.toLowerCase() || ''}`.trim() || 'Unnamed Professional'}
                         </Typography>
+                        
+                        <Typography variant="body2" color="primary" sx={{ mb: 1 }}>
+                          {professional?.specializations?.[0]?.label ?? 'No Specialization'}
+                        </Typography>
+                        
+                        {professional?.category && (
+                          <Chip
+                            label={professional.category.replace(/_/g, ' ')}
+                            size="small"
+                            sx={{ textTransform: 'capitalize' }}
+                          />
+                        )}
+                      </Box>
+                    </MotionCard>
+                  ))}
+                </Box>
+              )}
+
+              {/* Pagination - Centered */}
+              {totalPages > 1 && (
+                <Box sx={{ mt: 6, display: 'flex', justifyContent: 'center' }}>
+                  <Pagination
+                    count={totalPages}
+                    page={currentPage}
+                    onChange={handlePageChange}
+                    color="primary"
+                    size="large"
+                    showFirstButton
+                    showLastButton
+                    sx={{
+                      '& .MuiPaginationItem-root': {
+                        fontSize: '1rem',
+                        minWidth: '40px',
+                        height: '40px',
                       }
-                      secondary={
-                        <React.Fragment>
-                          <Typography variant="body2" color="primary" sx={{ display: 'inline' }}>
-                            {professional?.specializations?.[0]?.label ?? 'No Specialization'}
-                          </Typography>
-                          {professional?.domain && (
-                            <Chip
-                              label={professional.domain.replace(/_/g, ' ')}
-                              size="small"
-                              sx={{ ml: 1, textTransform: 'capitalize' }}
-                            />
-                          )}
-                        </React.Fragment>
-                      }
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            )
+                    }}
+                  />
+                </Box>
+              )}
+            </Box>
           )}
-        </Container>
-      </Box>
-    );
-  };
-  
-  export default Experts;
-  
-  
+        </Box>
+      </Container>
+    </Box>
+  );
+};
+
+export default Experts;

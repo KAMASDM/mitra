@@ -102,10 +102,43 @@ const theme = createTheme({
       fontWeight: 600,
     },
   },
+  spacing: 8, // Ensure consistent spacing unit
   shape: {
     borderRadius: 12,
   },
   components: {
+    // Global styles for better layout consistency
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          scrollBehavior: 'smooth',
+        },
+        '*': {
+          boxSizing: 'border-box',
+        },
+      },
+    },
+    MuiContainer: {
+      styleOverrides: {
+        root: {
+          paddingLeft: 16,
+          paddingRight: 16,
+          '@media (min-width: 600px)': {
+            paddingLeft: 24,
+            paddingRight: 24,
+          },
+          '@media (min-width: 960px)': {
+            paddingLeft: 32,
+            paddingRight: 32,
+          },
+        },
+        maxWidthLg: {
+          '@media (min-width: 1280px)': {
+            maxWidth: '1200px', // Slightly more constrained for better centering
+          },
+        },
+      },
+    },
     MuiButton: {
       styleOverrides: {
         root: {
@@ -160,6 +193,22 @@ const theme = createTheme({
         },
       },
     },
+    MuiSelect: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+        },
+      },
+    },
+    MuiFormControl: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            borderRadius: 12,
+          },
+        },
+      },
+    },
     MuiChip: {
       styleOverrides: {
         root: {
@@ -191,6 +240,60 @@ const theme = createTheme({
           boxShadow: '0 -2px 10px rgba(0,0,0,0.08)',
           background: 'rgba(255, 255, 255, 0.9)',
           backdropFilter: 'blur(10px)',
+        },
+      },
+    },
+    // Enhanced Grid component for better centering
+    MuiGrid: {
+      styleOverrides: {
+        container: {
+          width: '100%',
+          margin: 0, // Remove default negative margins
+        },
+        item: {
+          padding: 0, // Remove default padding, use spacing prop instead
+        },
+      },
+    },
+    // Enhanced List styling for better appearance
+    MuiList: {
+      styleOverrides: {
+        root: {
+          padding: 0, // Remove default padding for better control
+        },
+      },
+    },
+    MuiListItem: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+          marginBottom: 8,
+          '&:last-child': {
+            marginBottom: 0,
+          },
+        },
+      },
+    },
+    // Enhanced Pagination styling
+    MuiPagination: {
+      styleOverrides: {
+        root: {
+          display: 'flex',
+          justifyContent: 'center',
+        },
+      },
+    },
+    MuiPaginationItem: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+          '&.Mui-selected': {
+            backgroundColor: '#9D84B7',
+            color: '#ffffff',
+            '&:hover': {
+              backgroundColor: '#6A5ACD',
+            },
+          },
         },
       },
     },

@@ -36,7 +36,9 @@ import {
 
 const navItems = [
   { label: "Home", path: "/" },
+  { label: "About", path: "/about" },
   { label: "Services", path: "/services" },
+  { label: "Features", path: "/features" },
   { label: "Experts", path: "/experts" },
   { label: "Contact", path: "/contact" },
 ];

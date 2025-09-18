@@ -99,73 +99,133 @@ export const deleteUser = async (userId) => {
   }
 };
 
-// Get professionals with filters
-
+// Ultra-simple query approach - NO INDEXES NEEDED
 export const getProfessionals = async (filters = {}) => {
   try {
     const professionalsRef = collection(db, PROFESSIONALS_COLLECTION);
-    const queryConstraints = [];
+    const pageSize = filters.pageSize || 50; // Fetch more items for client-side filtering
 
-    // --- Build Filter Conditions ---
+    let q;
+    
+    // Strategy: Use only ONE constraint at a time to avoid composite indexes
     if (filters.category && filters.category !== 'All') {
-      queryConstraints.push(where('category', '==', filters.category));
-    }
-    if (filters.verified) {
-      queryConstraints.push(where('verification_status', '==', 'VERIFIED'));
-    }
-
-    // --- Build Sorting Condition ---
-    if (filters.sortBy) {
-      const direction = filters.sortBy === 'price' ? 'asc' : 'desc';
-      const sortByField = filters.sortBy === 'experience' ? 'years_of_experience' : filters.sortBy;
-      queryConstraints.push(orderBy(sortByField, direction));
+      // If category is specified, filter by category only
+      q = query(
+        professionalsRef,
+        where('category', '==', filters.category),
+        limit(pageSize)
+      );
     } else {
-      queryConstraints.push(orderBy('rating', 'desc'));
+      // Otherwise, just get verified professionals
+      q = query(
+        professionalsRef,
+        where('verification_status', '==', 'VERIFIED'),
+        limit(pageSize)
+      );
     }
 
-    // --- Build Limit Condition ---
-    if (filters.limit) {
-      queryConstraints.push(limit(filters.limit));
+    if (filters.lastDoc) {
+      q = query(q, startAfter(filters.lastDoc));
     }
 
-    // --- Query the 'professionals' collection ---
-    const q = query(professionalsRef, ...queryConstraints);
     const professionalsSnapshot = await getDocs(q);
 
     if (professionalsSnapshot.empty) {
-        return { professionals: [], success: true }; 
+      return { 
+        professionals: [], 
+        hasMore: false,
+        lastDoc: null,
+        success: true 
+      }; 
     }
 
+    // Process results and merge with user data
     const mergedDataPromises = professionalsSnapshot.docs.map(async (professionalDoc) => {
       const professionalData = { id: professionalDoc.id, ...professionalDoc.data() };
       
-      // --- SAFETY CHECK (Ab 'user_id' ke liye) ---
-      // Pehle check karein ki 'user_id' field document mein hai ya nahi.
       if (!professionalData.user_id) {
-        console.warn(`Professional document with ID ${professionalDoc.id} is MISSING the 'user_id' field. Skipping user data merge.`);
+        console.warn(`Professional document with ID ${professionalDoc.id} is MISSING the 'user_id' field.`);
         return professionalData;
       }
 
-      // 'user_id' ka istemal karke user data fetch karein.
       const userRef = doc(db, USERS_COLLECTION, professionalData.user_id);
       const userSnap = await getDoc(userRef);
 
       if (userSnap.exists()) {
         const userData = userSnap.data();
-        // Merge user data (jisme 'name' hai) aur professional data
         return { ...userData, ...professionalData };
       } else {
-        console.warn(`No matching user found in 'users' collection for professional with user_id: ${professionalData.user_id}`);
+        console.warn(`No matching user found for professional with user_id: ${professionalData.user_id}`);
         return professionalData;
       }
     });
 
-    const professionals = await Promise.all(mergedDataPromises);
+    let professionals = await Promise.all(mergedDataPromises);
 
-    return { professionals, success: true };
+    // CLIENT-SIDE FILTERING AND SORTING (no indexes needed!)
+    
+    // Filter by verification if we didn't already
+    if (filters.category && filters.category !== 'All') {
+      professionals = professionals.filter(prof => prof.verification_status === 'VERIFIED');
+    }
+
+    // Client-side sorting
+    if (filters.sortBy) {
+      professionals.sort((a, b) => {
+        switch (filters.sortBy) {
+          case 'price':
+            return (a.price || 0) - (b.price || 0); // ascending
+          case 'experience':
+            return (b.years_of_experience || 0) - (a.years_of_experience || 0); // descending
+          case 'newest':
+          default:
+            // Sort by createdAt if available, otherwise by document creation order
+            const aDate = a.createdAt?.toDate?.() || new Date(0);
+            const bDate = b.createdAt?.toDate?.() || new Date(0);
+            return bDate - aDate; // descending (newest first)
+        }
+      });
+    }
+
+    const lastDoc = professionalsSnapshot.docs[professionalsSnapshot.docs.length - 1];
+    const hasMore = professionalsSnapshot.docs.length === pageSize;
+
+    return { 
+      professionals, 
+      hasMore,
+      lastDoc,
+      success: true 
+    };
 
   } catch (error) {
     console.error('Error getting professionals:', error);
+    return { error: error.message, success: false };
+  }
+};
+
+// Get total count of professionals (for pagination info)
+export const getProfessionalsCount = async (filters = {}) => {
+  try {
+    const professionalsRef = collection(db, PROFESSIONALS_COLLECTION);
+    const queryConstraints = [];
+
+    // Always filter for verified professionals
+    queryConstraints.push(where('verification_status', '==', 'VERIFIED'));
+
+    // Add category filter if specified and not 'All'
+    if (filters.category && filters.category !== 'All') {
+      queryConstraints.push(where('category', '==', filters.category));
+    }
+
+    const q = query(professionalsRef, ...queryConstraints);
+    const snapshot = await getDocs(q);
+    
+    return { 
+      count: snapshot.size, 
+      success: true 
+    };
+  } catch (error) {
+    console.error('Error getting professionals count:', error);
     return { error: error.message, success: false };
   }
 };

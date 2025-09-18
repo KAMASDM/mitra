@@ -11,7 +11,9 @@ import ScrollToTop from './components/UI/ScrollToTop';
 
 // Pages
 import Landing from './pages/Landing/Landing';
+import About from './pages/About/About';
 import Services from './pages/Services/Services';
+import Features from './pages/Features/Features';
 import Experts from './pages/Experts/Experts';
 import Contact from './pages/Contact/Contact';
 import Login from './pages/Auth/Login';
@@ -44,7 +46,9 @@ function App() {
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Landing />} />
+              <Route path="/about" element={<About />} />
               <Route path="/services" element={<Services />} />
+              <Route path="/features" element={<Features />} />
               <Route path="/experts" element={<Experts />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/login" element={<Login />} />
