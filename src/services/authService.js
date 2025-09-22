@@ -70,7 +70,9 @@ export const signUpWithEmailAndPassword = async (email, password, userData) => {
 // Sign in with email and password
 export const signInWithEmailAndPassword_Custom = async (email, password) => {
   try {
+    console.log("Attempting to sign in with email:", email);
     const { user } = await signInWithEmailAndPassword(auth, email, password);
+    console.log("Firebase Authentication successful for user UID:", user.uid);
 
     // Get user profile from Firestore
     const userRef = doc(db, 'users', user.uid);
@@ -78,18 +80,22 @@ export const signInWithEmailAndPassword_Custom = async (email, password) => {
 
     if (userSnap.exists()) {
       const userData = userSnap.data();
+      console.log("Firestore data found:", userData); 
+
       return {
         user: {
           ...user,
-          ...userData
+          ...userData 
         },
         success: true
       };
+    } else {
+      console.error("USER NOT FOUND IN FIRESTORE. UID:", user.uid); 
+      return { error: 'User profile not found in database.', success: false };
     }
 
-    return { user, success: true };
   } catch (error) {
-    console.error('Error signing in:', error);
+    console.error('CRITICAL SIGN-IN ERROR:', error); 
     return { error: error.message, success: false };
   }
 };
