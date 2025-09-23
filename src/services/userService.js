@@ -534,13 +534,14 @@ export const getPlatformMetrics = async () => {
     const thirtyDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
     const sixtyDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 60);
 
-    // --- User Growth (No change here) ---
+    // --- User Growth ---
     const usersQuery = query(collection(db, USERS_COLLECTION), where('createdAt', '>=', Timestamp.fromDate(thirtyDaysAgo)));
     const prevUsersQuery = query(collection(db, USERS_COLLECTION), where('createdAt', '>=', Timestamp.fromDate(sixtyDaysAgo)), where('createdAt', '<', Timestamp.fromDate(thirtyDaysAgo)));
     const recentUsersSnap = await getDocs(usersQuery);
     const prevUsersSnap = await getDocs(prevUsersQuery);
     const userGrowth = prevUsersSnap.size > 0 ? ((recentUsersSnap.size - prevUsersSnap.size) / prevUsersSnap.size) * 100 : recentUsersSnap.size > 0 ? 100 : 0;
 
+    // --- Professional Growth ---
     const profsQuery = query(
       collection(db, USERS_COLLECTION),
       where('role', '==', 'PROFESSIONAL'),
@@ -554,31 +555,36 @@ export const getPlatformMetrics = async () => {
     );
     const recentProfsSnap = await getDocs(profsQuery);
     const prevProfsSnap = await getDocs(prevProfsQuery);
-
     const professionalGrowth = prevProfsSnap.size > 0 ? ((recentProfsSnap.size - prevProfsSnap.size) / prevProfsSnap.size) * 100 : recentProfsSnap.size > 0 ? 100 : 0;
 
-    // --- Revenue Growth (No change here) ---
+    // --- Revenue & Session Growth ---
     const recentBookingsQuery = query(collection(db, BOOKINGS_COLLECTION), where('createdAt', '>=', Timestamp.fromDate(thirtyDaysAgo)), where('status', '==', 'completed'));
     const prevBookingsQuery = query(collection(db, BOOKINGS_COLLECTION), where('createdAt', '>=', Timestamp.fromDate(sixtyDaysAgo)), where('createdAt', '<', Timestamp.fromDate(thirtyDaysAgo)), where('status', '==', 'completed'));
-
+    
     const recentBookingsSnap = await getDocs(recentBookingsQuery);
     const prevBookingsSnap = await getDocs(prevBookingsQuery);
 
     let recentRevenue = 0;
     recentBookingsSnap.forEach(doc => recentRevenue += doc.data().amount || 0);
-
+    
     let prevRevenue = 0;
     prevBookingsSnap.forEach(doc => prevRevenue += doc.data().amount || 0);
 
     const revenueGrowth = prevRevenue > 0 ? ((recentRevenue - prevRevenue) / prevRevenue) * 100 : recentRevenue > 0 ? 100 : 0;
 
-    const satisfactionRate = 96;
+    // FIX: Added session growth calculation
+    const recentSessionsCount = recentBookingsSnap.size;
+    const prevSessionsCount = prevBookingsSnap.size;
+    const sessionGrowth = prevSessionsCount > 0 ? ((recentSessionsCount - prevSessionsCount) / prevSessionsCount) * 100 : recentSessionsCount > 0 ? 100 : 0;
+
+    const satisfactionRate = 96; // Placeholder
 
     return {
       metrics: {
         userGrowth: Math.round(userGrowth),
         professionalGrowth: Math.round(professionalGrowth),
         revenueGrowth: Math.round(revenueGrowth),
+        sessionGrowth: Math.round(sessionGrowth), 
         satisfactionRate,
       },
       success: true,
@@ -586,6 +592,20 @@ export const getPlatformMetrics = async () => {
 
   } catch (error) {
     console.error("Error getting platform metrics:", error);
+    return { error: error.message, success: false };
+  }
+};
+
+export const getAllSpecializations = async () => {
+  try {
+    const specializationsSnapshot = await getDocs(collection(db, 'specializations'));
+    const specializations = [];
+    specializationsSnapshot.forEach((doc) => {
+      specializations.push({ id: doc.id, ...doc.data() });
+    });
+    return { specializations, success: true };
+  } catch (error) {
+    console.error('Error getting all specializations:', error);
     return { error: error.message, success: false };
   }
 };

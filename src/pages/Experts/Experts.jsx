@@ -34,178 +34,154 @@ import {
   Apps, // Grid view icon
   ViewList, // List view icon
 } from '@mui/icons-material';
-import { getProfessionals, getProfessionalsCount } from '../../services/userService';
+import { getProfessionals, getProfessionalsCount, getAllSpecializations } from '../../services/userService';
 
 const MotionCard = motion(Card);
 
-const categories = ['All', 'Mental Health', 'Legal Aid', 'Medical Services', 'Career & Placement', 'Financial Guidance'];
+// const categories = ['All', 'Mental Health', 'Legal Aid', 'Medical Services', 'Career & Placement', 'Financial Guidance'];
+// src/pages/Experts/Experts.jsx
+
+const categories = [
+  { value: 'All', label: 'All' },
+  { value: 'Therapeutic Approach', label: 'Mental Health' },
+  { value: 'Legal Aid', label: 'Legal Aid' },
+  { value: 'Medical Services', label: 'Medical Services' },
+  { value: 'Career & Placement', label: 'Career & Placement' },
+  { value: 'Financial Guidance', label: 'Financial Guidance' },
+];
 
 const Experts = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  
+
   // Data state
   const [allProfessionals, setAllProfessionals] = useState([]);
   const [filteredProfessionals, setFilteredProfessionals] = useState([]);
-  
-  // Loading and error state
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);   // Loading and error state
   const [error, setError] = useState('');
-  
-  // Filter state
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(''); // Filter state
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState('newest'); // Changed default
-  
-  // UI state
-  const [favorites, setFavorites] = useState(new Set());
+  const [favorites, setFavorites] = useState(new Set());   // UI state
   const [viewMode, setViewMode] = useState('grid');
-  
-  // Pagination state - simplified
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);   // Pagination state - simplified
   const [totalCount, setTotalCount] = useState(0);
   const itemsPerPage = 12;
 
-  // Calculate total pages
-  const totalPages = Math.ceil(totalCount / itemsPerPage);
+  useEffect(() => {
+    const fetchAndMergeData = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        // Step 1: Dono collections ka data ek saath fetch karein.
+        const [profResult, specResult] = await Promise.all([
+          getProfessionals({ pageSize: 100 }),
+          getAllSpecializations()
+        ]);
 
-  // Fetch ALL professionals once and filter client-side (NO INDEXES NEEDED!)
-  const fetchProfessionals = async () => {
-    setLoading(true);
-    setError('');
-    setCurrentPage(1);
-    
-    try {
-      // Simple fetch - get all verified professionals
-      const result = await getProfessionals({
-        // No filters here - get all verified professionals
-        pageSize: 100 // Get more items for better client-side filtering
-      });
+        if (!profResult.success || !specResult.success) {
+          throw new Error(profResult.error || specResult.error || 'Failed to fetch initial data');
+        }
 
-      console.log('Fetched professionals:', result);
-      
-      if (result.success) {
-        setAllProfessionals(result.professionals);
-        // Apply all filters immediately
-        applyAllFilters(result.professionals);
-      } else {
-        setError(result.error || 'Failed to fetch professionals.');
+        const professionals = profResult.professionals;
+        const specializations = specResult.specializations;
+
+        // Step 2: Data ko 'professional_type_id' ke aadhar par jodein (join karein).
+        const mergedProfessionals = professionals.map(prof => {
+          const matchingSpec = specializations.find(spec =>
+            spec.professional_types?.includes(String(prof.professional_type_id))
+          );
+
+          // Agar match mil jaye to 'category' field ko professional object mein add kar dein.
+          return matchingSpec ? { ...prof, category: matchingSpec.category } : prof;
+        });
+
+        setAllProfessionals(mergedProfessionals);
+
+      } catch (err) {
+        setError('An error occurred while fetching data.');
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError('An error occurred while fetching professionals.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  // Apply all filters and sorting client-side
-  const applyAllFilters = (professionals = allProfessionals) => {
-    let filtered = [...professionals];
+    fetchAndMergeData();
+  }, []); // Yeh dependency array ખાલી hai, isliye yeh sirf ek baar chalega.
 
-    // Apply category filter
+  // ==> BADLAAV 3: Ek naya useEffect banaya gaya hai jo filter/sort state change hone par chalta hai.
+  useEffect(() => {
+    let filtered = [...allProfessionals];
+
+    // Category filter ka logic
     if (selectedCategory && selectedCategory !== 'All') {
       filtered = filtered.filter(prof => prof.category === selectedCategory);
     }
 
-    // Apply search filter
+    // Search filter ka logic
     if (searchTerm) {
       const lowerCaseSearchTerm = searchTerm.toLowerCase();
-      filtered = filtered.filter(professional => {
-        const hasNameMatch = (professional.first_name?.toLowerCase() ?? '').includes(lowerCaseSearchTerm) ||
-                            (professional.last_name?.toLowerCase() ?? '').includes(lowerCaseSearchTerm);
-        const hasSpecializationMatch = professional.specializations?.some(spec =>
-          (spec.label?.toLowerCase() ?? '').includes(lowerCaseSearchTerm)
-        );
-        const hasCategoryMatch = (professional.category?.toLowerCase() ?? '').includes(lowerCaseSearchTerm);
-        return hasNameMatch || hasSpecializationMatch || hasCategoryMatch;
+      filtered = filtered.filter(prof => {
+        const name = `${prof.first_name || ''} ${prof.last_name || ''}`.toLowerCase();
+        return name.includes(lowerCaseSearchTerm) ||
+          (prof.category?.toLowerCase() || '').includes(lowerCaseSearchTerm) ||
+          (prof.biography?.toLowerCase() || '').includes(lowerCaseSearchTerm);
       });
     }
 
-    // Apply sorting
+    // Sorting ka logic
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'price':
-          return (a.price || 0) - (b.price || 0); // ascending
-        case 'experience':
-          return (b.years_of_experience || 0) - (a.years_of_experience || 0); // descending
+          return (a.hourly_rate || 0) - (b.hourly_rate || 0);
         case 'newest':
         default:
-          // Sort by createdAt if available
-          const aDate = a.createdAt?.toDate?.() || new Date(0);
-          const bDate = b.createdAt?.toDate?.() || new Date(0);
-          return bDate - aDate; // descending (newest first)
+          const aDate = a.created_at?.toDate?.() || new Date(0);
+          const bDate = b.created_at?.toDate?.() || new Date(0);
+          return bDate - aDate;
       }
     });
 
     setFilteredProfessionals(filtered);
-    setTotalCount(filtered.length);
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1); // Filter change hone par page 1 par reset karein.
+  }, [selectedCategory, sortBy, searchTerm, allProfessionals]);
+
+  // ==> BADLAAV 4: `handleClearFilters` function ko define kiya gaya hai jo pehle missing tha.
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setSelectedCategory('All');
+    setSortBy('newest');
   };
 
-  // Apply search filter to current data
-  const applySearchFilter = (professionals = allProfessionals) => {
-    // This function is now handled by applyAllFilters
-    applyAllFilters(professionals);
-  };
-
-  // Handle page change - much simpler now
   const handlePageChange = (event, page) => {
     setCurrentPage(page);
   };
 
-  // Get professionals for current page
   const getCurrentPageProfessionals = () => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     return filteredProfessionals.slice(startIndex, endIndex);
   };
 
-  // Effect for initial load
-  useEffect(() => {
-    fetchProfessionals();
-  }, []); // Only run once on mount
-
-  // Effect for filter changes - apply client-side filtering
-  useEffect(() => {
-    if (allProfessionals.length > 0) {
-      applyAllFilters();
-    }
-  }, [selectedCategory, sortBy, searchTerm]);
-
-  const toggleFavorite = (professionalId) => {
-    const newFavorites = new Set(favorites);
-    if (newFavorites.has(professionalId)) {
-      newFavorites.delete(professionalId);
-    } else {
-      newFavorites.add(professionalId);
-    }
-    setFavorites(newFavorites);
-  };
-
-  const handleClearFilters = () => {
-    setSearchTerm('');
-    setSelectedCategory('All');
-    setSortBy('newest');
-    setCurrentPage(1);
-  };
+  const totalPages = Math.ceil(filteredProfessionals.length / itemsPerPage);
 
   return (
-    <Box sx={{ 
-      py: 8, 
-      bgcolor: 'background.default', 
+    <Box sx={{
+      py: 8,
+      bgcolor: 'background.default',
       minHeight: '100vh',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center'
     }}>
-      <Container 
-        maxWidth="lg" 
-        sx={{ 
+      <Container
+        maxWidth="lg"
+        sx={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          width: '100%'
+          width: '100%',
+          minWidth: '95vw',
         }}
       >
         {/* Header Section - Centered */}
@@ -213,8 +189,8 @@ const Experts = () => {
           <Typography variant="h2" component="h1" sx={{ fontWeight: 800, color: 'text.primary', mb: 2 }}>
             Find Your Expert
           </Typography>
-          <Typography variant="h6" sx={{ 
-            color: 'text.secondary', 
+          <Typography variant="h6" sx={{
+            color: 'text.secondary',
             lineHeight: 1.6,
             maxWidth: '600px',
             mx: 'auto'
@@ -224,51 +200,46 @@ const Experts = () => {
         </Box>
 
         {/* Search and Filter Section - Centered */}
-        <Box sx={{ 
-          mb: 6, 
-          p: { xs: 3, md: 4 }, 
-          borderRadius: 3, 
-          bgcolor: 'background.paper', 
+
+        <Box sx={{
+          mb: 6,
+          p: { xs: 2, md: 2.5 }, // Adjusted padding for a tighter look
+          borderRadius: 3,
+          bgcolor: 'background.paper',
           boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
           width: '100%',
-          maxWidth: '900px'
         }}>
-          <Stack spacing={3} alignItems="center">
-            {/* Search Bar - Full Width */}
-            <Box sx={{ width: '100%', maxWidth: '400px' }}>
+          <Stack
+            direction={{ xs: 'column', md: 'row' }} // Stacks vertically on small screens, row on medium and up
+            spacing={2}
+            justifyContent="space-between" // This is key: pushes left and right groups apart
+            alignItems="center"
+          >
+            {/* Left Group: Search, Category, and Sort By */}
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }} // Stacks inputs vertically on extra small screens
+              spacing={2}
+              alignItems="center"
+            >
               <TextField
-                fullWidth
-                placeholder="Search by name, specialization, or expertise..."
+                variant="outlined"
+                size="small" // Match height of Select inputs
+                placeholder="Search by name, specialization..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
                   startAdornment: <Search sx={{ color: 'text.secondary', mr: 1 }} />,
                 }}
+                sx={{ minWidth: { sm: 220 }, width: { xs: '100%', sm: 'auto' } }}
               />
-            </Box>
-            
-            {/* Filters Row */}
-            <Stack 
-              direction={{ xs: 'column', sm: 'row' }} 
-              spacing={2} 
-              alignItems="center" 
-              justifyContent="center"
-              sx={{ width: '100%' }}
-            >
-              <FormControl sx={{ minWidth: 150 }}>
+              <FormControl size="small" sx={{ minWidth: 150, width: { xs: '100%', sm: 'auto' } }}>
                 <InputLabel>Category</InputLabel>
-                <Select 
-                  value={selectedCategory} 
-                  label="Category" 
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                >
-                  {categories.map((category) => (
-                    <MenuItem key={category} value={category}>{category}</MenuItem>
-                  ))}
+                <Select value={selectedCategory} label="Category" onChange={(e) => setSelectedCategory(e.target.value)}>
+                  {categories.map(cat => <MenuItem key={cat.value} value={cat.value}>{cat.label}</MenuItem>)}
                 </Select>
               </FormControl>
-              
-              <FormControl sx={{ minWidth: 150 }}>
+
+              <FormControl size="small" sx={{ minWidth: 150, width: { xs: '100%', sm: 'auto' } }}>
                 <InputLabel>Sort By</InputLabel>
                 <Select value={sortBy} label="Sort By" onChange={(e) => setSortBy(e.target.value)}>
                   <MenuItem value="newest">Newest First</MenuItem>
@@ -276,55 +247,48 @@ const Experts = () => {
                   <MenuItem value="experience">Most Experienced</MenuItem>
                 </Select>
               </FormControl>
-              
-              {/* View Toggle */}
-              <Stack 
-                direction="row" 
-                spacing={1} 
-                alignItems="center"
+            </Stack>
+
+            {/* Right Group: View Toggle Icons */}
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              sx={{
+                border: `1px solid ${theme.palette.divider}`,
+                borderRadius: '50px', // Creates the pill shape
+                p: '4px', // Adds padding inside the pill
+              }}
+            >
+              <IconButton
+                size="small"
+                onClick={() => setViewMode('grid')}
                 sx={{
-                  border: `1px solid ${alpha(theme.palette.text.primary, 0.1)}`,
-                  borderRadius: '50px',
-                  ml: { sm: 2 }
+                  bgcolor: viewMode === 'grid' ? 'primary.main' : 'transparent',
+                  color: viewMode === 'grid' ? 'common.white' : 'text.secondary',
+                  '&:hover': {
+                    bgcolor: viewMode === 'grid' ? 'primary.dark' : alpha(theme.palette.primary.main, 0.1),
+                  },
                 }}
               >
-                <IconButton
-                  onClick={() => setViewMode('grid')}
-                  sx={{
-                    borderRadius: '50%',
-                    bgcolor: viewMode === 'grid' ? theme.palette.primary.main : 'transparent',
-                    color: viewMode === 'grid' ? theme.palette.common.white : theme.palette.text.secondary,
-                    border: viewMode === 'grid' ? `2px solid ${theme.palette.primary.main}` : '2px solid transparent',
-                    '&:hover': {
-                      bgcolor: viewMode === 'grid' ? theme.palette.primary.dark : alpha(theme.palette.primary.main, 0.1),
-                    },
-                    p: '8px',
-                    transition: 'all 0.3s ease-in-out',
-                  }}
-                >
-                  <Apps />
-                </IconButton>
-                <IconButton
-                  onClick={() => setViewMode('list')}
-                  sx={{
-                    borderRadius: '50%',
-                    bgcolor: viewMode === 'list' ? theme.palette.primary.main : 'transparent',
-                    color: viewMode === 'list' ? theme.palette.common.white : theme.palette.text.secondary,
-                    border: viewMode === 'list' ? `2px solid ${theme.palette.primary.main}` : '2px solid transparent',
-                    '&:hover': {
-                      bgcolor: viewMode === 'list' ? theme.palette.primary.dark : alpha(theme.palette.primary.main, 0.1),
-                    },
-                    p: '8px',
-                    transition: 'all 0.3s ease-in-out',
-                  }}
-                >
-                  <ViewList />
-                </IconButton>
-              </Stack>
+                <Apps />
+              </IconButton>
+              <IconButton
+                size="small"
+                onClick={() => setViewMode('list')}
+                sx={{
+                  bgcolor: viewMode === 'list' ? 'primary.main' : 'transparent',
+                  color: viewMode === 'list' ? 'common.white' : 'text.secondary',
+                  '&:hover': {
+                    bgcolor: viewMode === 'list' ? 'primary.dark' : alpha(theme.palette.primary.main, 0.1),
+                  },
+                }}
+              >
+                <ViewList />
+              </IconButton>
             </Stack>
           </Stack>
         </Box>
-
         {/* Results Info - Centered */}
         {!loading && !error && (
           <Box sx={{ mb: 3, textAlign: 'center' }}>
@@ -369,10 +333,10 @@ const Experts = () => {
           ) : (
             <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               {viewMode === 'grid' ? (
-                <Box sx={{ 
-                  display: 'flex', 
-                  flexWrap: 'wrap', 
-                  gap: 3, 
+                <Box sx={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 3,
                   justifyContent: 'center',
                   width: '100%'
                 }}>
@@ -403,31 +367,31 @@ const Experts = () => {
                             <Avatar sx={{ width: 80, height: 80, mb: 2, bgcolor: 'primary.light', fontSize: '2rem' }}>
                               {professional?.first_name?.charAt(0)?.toUpperCase() ?? 'P'}
                             </Avatar>
-                            
-                            <Typography variant="h6" sx={{ 
-                              fontWeight: 700, 
+
+                            <Typography variant="h6" sx={{
+                              fontWeight: 700,
                               mb: 1,
-                              wordBreak: 'break-word', 
+                              wordBreak: 'break-word',
                               textTransform: 'capitalize',
                               minHeight: '32px'
                             }}>
                               {`${professional?.first_name?.toLowerCase() || ''} ${professional?.last_name?.toLowerCase() || ''}`.trim() || 'Unnamed Professional'}
                             </Typography>
-                            
-                            <Typography variant="body2" color="primary" sx={{ 
-                              mb: 2, 
+
+                            <Typography variant="body2" color="primary" sx={{
+                              mb: 2,
                               minHeight: '40px',
                               display: 'flex',
                               alignItems: 'center'
                             }}>
                               {professional?.specializations?.[0]?.label ?? 'No Specialization'}
                             </Typography>
-                            
+
                             {professional?.category && (
-                              <Chip 
-                                label={professional.category.replace(/_/g, ' ')} 
-                                size="small" 
-                                sx={{ textTransform: 'capitalize' }} 
+                              <Chip
+                                label={professional.category.replace(/_/g, ' ')}
+                                size="small"
+                                sx={{ textTransform: 'capitalize' }}
                               />
                             )}
                           </Box>
@@ -463,16 +427,16 @@ const Experts = () => {
                       <Avatar sx={{ width: 60, height: 60, bgcolor: 'primary.light', fontSize: '1.5rem', mr: 3 }}>
                         {professional?.first_name?.charAt(0)?.toUpperCase() ?? 'P'}
                       </Avatar>
-                      
+
                       <Box sx={{ flexGrow: 1 }}>
                         <Typography variant="h6" sx={{ fontWeight: 600, textTransform: 'capitalize', mb: 0.5 }}>
                           {`${professional?.first_name?.toLowerCase() || ''} ${professional?.last_name?.toLowerCase() || ''}`.trim() || 'Unnamed Professional'}
                         </Typography>
-                        
+
                         <Typography variant="body2" color="primary" sx={{ mb: 1 }}>
                           {professional?.specializations?.[0]?.label ?? 'No Specialization'}
                         </Typography>
-                        
+
                         {professional?.category && (
                           <Chip
                             label={professional.category.replace(/_/g, ' ')}

@@ -1,577 +1,4 @@
-// // src/pages/Dashboards/AdminDashboard.jsx
-// import React, { useState } from 'react';
-// import {
-//   Box,
-//   Container,
-//   Typography,
-//   Grid,
-//   Card,
-//   CardContent,
-//   Table,
-//   TableBody,
-//   TableCell,
-//   TableContainer,
-//   TableHead,
-//   TableRow,
-//   Button,
-//   Chip,
-//   IconButton,
-//   Stack,
-//   LinearProgress,
-//   useTheme,
-//   alpha,
-//   Tabs,
-//   Tab,
-//   Avatar,
-//   Paper,
-// } from '@mui/material';
-// import { motion } from 'framer-motion';
-// import {
-//   People,
-//   Person,
-//   TrendingUp,
-//   AttachMoney,
-//   Visibility,
-//   Edit,
-//   Delete,
-//   CheckCircle,
-//   Cancel,
-//   MoreVert,
-//   Analytics,
-//   Security,
-//   Settings,
-// } from '@mui/icons-material';
-
-// const MotionCard = motion(Card);
-
-// // Mock data
-// const platformStats = [
-//   { label: 'Total Users', value: '2,847', icon: <People />, color: '#9D84B7', change: '+12%' },
-//   { label: 'Professionals', value: '486', icon: <Person />, color: '#F4A259', change: '+8%' },
-//   { label: 'Total Revenue', value: '₹45.2L', icon: <AttachMoney />, color: '#4DAA57', change: '+15%' },
-//   { label: 'Sessions', value: '12,439', icon: <TrendingUp />, color: '#5899E2', change: '+22%' },
-// ];
-
-// const pendingProfessionals = [
-//   {
-//     id: 1,
-//     name: 'Dr. Rohit Verma',
-//     email: 'rohit.verma@email.com',
-//     profession: 'Psychiatrist',
-//     experience: '12 years',
-//     location: 'Mumbai',
-//     submittedDate: '2025-09-10',
-//     documents: ['Medical License', 'Identity Proof', 'Experience Certificate'],
-//   },
-//   {
-//     id: 2,
-//     name: 'Adv. Priya Singh',
-//     email: 'priya.singh@email.com',
-//     profession: 'Human Rights Lawyer',
-//     experience: '8 years',
-//     location: 'Delhi',
-//     submittedDate: '2025-09-12',
-//     documents: ['Bar Council Certificate', 'Identity Proof', 'Practice Certificate'],
-//   },
-// ];
-
-// const recentUsers = [
-//   {
-//     id: 1,
-//     name: 'Sarah Johnson',
-//     email: 'sarah@email.com',
-//     type: 'Client',
-//     joinDate: '2025-09-13',
-//     status: 'Active',
-//     sessions: 3,
-//   },
-//   {
-//     id: 2,
-//     name: 'Alex Kumar',
-//     email: 'alex@email.com',
-//     type: 'Client',
-//     joinDate: '2025-09-12',
-//     status: 'Active',
-//     sessions: 1,
-//   },
-// ];
-
-// const platformMetrics = {
-//   userGrowth: 85,
-//   professionalGrowth: 72,
-//   revenueGrowth: 94,
-//   satisfactionRate: 96,
-// };
-
-// const AdminDashboard = () => {
-//   const theme = useTheme();
-//   const user = JSON.parse(localStorage.getItem('loginInfo'));
-//   const [tabValue, setTabValue] = useState(0);
-
-//   const handleTabChange = (event, newValue) => {
-//     setTabValue(newValue);
-//   };
-
-//   const handleApproveProfessional = (professionalId) => {
-//     console.log('Approve professional:', professionalId);
-//   };
-
-//   const handleRejectProfessional = (professionalId) => {
-//     console.log('Reject professional:', professionalId);
-//   };
-
-//   const renderOverview = () => (
-//     <Grid container spacing={4}>
-//       {/* Platform Statistics */}
-//       <Grid item xs={12}>
-//         <Grid container spacing={3} sx={{ mb: 4 }}>
-//           {platformStats.map((stat, index) => (
-//             <Grid item xs={12} sm={6} md={3} key={index}>
-//               <MotionCard
-//                 initial={{ opacity: 0, y: 20 }}
-//                 animate={{ opacity: 1, y: 0 }}
-//                 transition={{ duration: 0.5, delay: index * 0.1 }}
-//                 sx={{
-//                   p: 3,
-//                   borderRadius: 3,
-//                   border: `2px solid ${alpha(stat.color, 0.1)}`,
-//                   '&:hover': {
-//                     borderColor: stat.color,
-//                     transform: 'translateY(-4px)',
-//                     boxShadow: `0 10px 25px ${alpha(stat.color, 0.2)}`,
-//                   },
-//                   transition: 'all 0.3s ease',
-//                 }}
-//               >
-//                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-//                   <Box>
-//                     <Typography
-//                       variant="h4"
-//                       sx={{
-//                         fontWeight: 800,
-//                         color: stat.color,
-//                         mb: 1,
-//                       }}
-//                     >
-//                       {stat.value}
-//                     </Typography>
-//                     <Typography
-//                       variant="body2"
-//                       sx={{
-//                         color: 'text.secondary',
-//                         fontWeight: 500,
-//                         mb: 1,
-//                       }}
-//                     >
-//                       {stat.label}
-//                     </Typography>
-//                     <Chip
-//                       label={stat.change}
-//                       size="small"
-//                       sx={{
-//                         bgcolor: alpha(theme.palette.success.main, 0.1),
-//                         color: 'success.main',
-//                         fontWeight: 600,
-//                       }}
-//                     />
-//                   </Box>
-//                   <Box
-//                     sx={{
-//                       width: 60,
-//                       height: 60,
-//                       borderRadius: '50%',
-//                       background: alpha(stat.color, 0.1),
-//                       display: 'flex',
-//                       alignItems: 'center',
-//                       justifyContent: 'center',
-//                       color: stat.color,
-//                     }}
-//                   >
-//                     {stat.icon}
-//                   </Box>
-//                 </Box>
-//               </MotionCard>
-//             </Grid>
-//           ))}
-//         </Grid>
-//       </Grid>
-
-//       {/* Platform Metrics */}
-//       <Grid item xs={12} md={6}>
-//         <MotionCard
-//           initial={{ opacity: 0, x: -20 }}
-//           animate={{ opacity: 1, x: 0 }}
-//           transition={{ duration: 0.6 }}
-//           sx={{ borderRadius: 3, height: '100%' }}
-//         >
-//           <CardContent sx={{ p: 4 }}>
-//             <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
-//               Platform Metrics
-//             </Typography>
-
-//             <Stack spacing={3}>
-//               <Box>
-//                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-//                   <Typography variant="body2">User Growth</Typography>
-//                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
-//                     {platformMetrics.userGrowth}%
-//                   </Typography>
-//                 </Box>
-//                 <LinearProgress
-//                   variant="determinate"
-//                   value={platformMetrics.userGrowth}
-//                   sx={{
-//                     height: 8,
-//                     borderRadius: 4,
-//                     bgcolor: alpha(theme.palette.primary.main, 0.1),
-//                   }}
-//                 />
-//               </Box>
-
-//               <Box>
-//                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-//                   <Typography variant="body2">Professional Growth</Typography>
-//                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
-//                     {platformMetrics.professionalGrowth}%
-//                   </Typography>
-//                 </Box>
-//                 <LinearProgress
-//                   variant="determinate"
-//                   value={platformMetrics.professionalGrowth}
-//                   sx={{
-//                     height: 8,
-//                     borderRadius: 4,
-//                     bgcolor: alpha(theme.palette.secondary.main, 0.1),
-//                     '& .MuiLinearProgress-bar': {
-//                       bgcolor: 'secondary.main',
-//                     },
-//                   }}
-//                 />
-//               </Box>
-
-//               <Box>
-//                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-//                   <Typography variant="body2">Revenue Growth</Typography>
-//                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
-//                     {platformMetrics.revenueGrowth}%
-//                   </Typography>
-//                 </Box>
-//                 <LinearProgress
-//                   variant="determinate"
-//                   value={platformMetrics.revenueGrowth}
-//                   sx={{
-//                     height: 8,
-//                     borderRadius: 4,
-//                     bgcolor: alpha(theme.palette.success.main, 0.1),
-//                     '& .MuiLinearProgress-bar': {
-//                       bgcolor: 'success.main',
-//                     },
-//                   }}
-//                 />
-//               </Box>
-
-//               <Box>
-//                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-//                   <Typography variant="body2">Satisfaction Rate</Typography>
-//                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
-//                     {platformMetrics.satisfactionRate}%
-//                   </Typography>
-//                 </Box>
-//                 <LinearProgress
-//                   variant="determinate"
-//                   value={platformMetrics.satisfactionRate}
-//                   sx={{
-//                     height: 8,
-//                     borderRadius: 4,
-//                     bgcolor: alpha(theme.palette.info.main, 0.1),
-//                     '& .MuiLinearProgress-bar': {
-//                       bgcolor: 'info.main',
-//                     },
-//                   }}
-//                 />
-//               </Box>
-//             </Stack>
-//           </CardContent>
-//         </MotionCard>
-//       </Grid>
-
-//       {/* Recent Users */}
-//       <Grid item xs={12} md={6}>
-//         <MotionCard
-//           initial={{ opacity: 0, x: 20 }}
-//           animate={{ opacity: 1, x: 0 }}
-//           transition={{ duration: 0.6, delay: 0.2 }}
-//           sx={{ borderRadius: 3, height: '100%' }}
-//         >
-//           <CardContent sx={{ p: 4 }}>
-//             <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
-//               Recent Users
-//             </Typography>
-
-//             <Stack spacing={3}>
-//               {recentUsers.map((user) => (
-//                 <Paper
-//                   key={user.id}
-//                   sx={{
-//                     p: 2,
-//                     borderRadius: 2,
-//                     border: '1px solid',
-//                     borderColor: 'divider',
-//                   }}
-//                 >
-//                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-//                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-//                       <Avatar sx={{ bgcolor: 'primary.main' }}>
-//                         {user.name.charAt(0)}
-//                       </Avatar>
-//                       <Box>
-//                         <Typography variant="body1" sx={{ fontWeight: 600 }}>
-//                           {user.name}
-//                         </Typography>
-//                         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-//                           {user.email}
-//                         </Typography>
-//                       </Box>
-//                     </Box>
-//                     <Box sx={{ textAlign: 'right' }}>
-//                       <Chip
-//                         label={user.type}
-//                         size="small"
-//                         color="primary"
-//                         sx={{ mb: 1 }}
-//                       />
-//                       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-//                         {user.sessions} sessions
-//                       </Typography>
-//                     </Box>
-//                   </Box>
-//                 </Paper>
-//               ))}
-//             </Stack>
-//           </CardContent>
-//         </MotionCard>
-//       </Grid>
-//     </Grid>
-//   );
-
-//   const renderProfessionalApprovals = () => (
-//     <Grid container spacing={4}>
-//       <Grid item xs={12}>
-//         <MotionCard
-//           initial={{ opacity: 0, y: 20 }}
-//           animate={{ opacity: 1, y: 0 }}
-//           transition={{ duration: 0.6 }}
-//           sx={{ borderRadius: 3 }}
-//         >
-//           <CardContent sx={{ p: 4 }}>
-//             <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
-//               Pending Professional Approvals
-//             </Typography>
-
-//             <TableContainer>
-//               <Table>
-//                 <TableHead>
-//                   <TableRow>
-//                     <TableCell>Professional</TableCell>
-//                     <TableCell>Profession</TableCell>
-//                     <TableCell>Experience</TableCell>
-//                     <TableCell>Location</TableCell>
-//                     <TableCell>Submitted</TableCell>
-//                     <TableCell>Documents</TableCell>
-//                     <TableCell>Actions</TableCell>
-//                   </TableRow>
-//                 </TableHead>
-//                 <TableBody>
-//                   {pendingProfessionals.map((professional) => (
-//                     <TableRow key={professional.id}>
-//                       <TableCell>
-//                         <Box>
-//                           <Typography variant="body1" sx={{ fontWeight: 600 }}>
-//                             {professional.name}
-//                           </Typography>
-//                           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-//                             {professional.email}
-//                           </Typography>
-//                         </Box>
-//                       </TableCell>
-//                       <TableCell>{professional.profession}</TableCell>
-//                       <TableCell>{professional.experience}</TableCell>
-//                       <TableCell>{professional.location}</TableCell>
-//                       <TableCell>{professional.submittedDate}</TableCell>
-//                       <TableCell>
-//                         <Stack direction="row" spacing={1}>
-//                           {professional.documents.map((doc, index) => (
-//                             <Chip
-//                               key={index}
-//                               label={doc}
-//                               size="small"
-//                               color="success"
-//                               variant="outlined"
-//                             />
-//                           ))}
-//                         </Stack>
-//                       </TableCell>
-//                       <TableCell>
-//                         <Stack direction="row" spacing={1}>
-//                           <IconButton
-//                             size="small"
-//                             color="primary"
-//                             onClick={() => console.log('View details:', professional.id)}
-//                           >
-//                             <Visibility />
-//                           </IconButton>
-//                           <IconButton
-//                             size="small"
-//                             color="success"
-//                             onClick={() => handleApproveProfessional(professional.id)}
-//                           >
-//                             <CheckCircle />
-//                           </IconButton>
-//                           <IconButton
-//                             size="small"
-//                             color="error"
-//                             onClick={() => handleRejectProfessional(professional.id)}
-//                           >
-//                             <Cancel />
-//                           </IconButton>
-//                         </Stack>
-//                       </TableCell>
-//                     </TableRow>
-//                   ))}
-//                 </TableBody>
-//               </Table>
-//             </TableContainer>
-//           </CardContent>
-//         </MotionCard>
-//       </Grid>
-//     </Grid>
-//   );
-
-//   return (
-//     <Box sx={{ py: 4, bgcolor: 'background.default', minHeight: '100vh' }}>
-//       <Container maxWidth="xl">
-//         {/* Welcome Header */}
-//         <Box sx={{ mb: 4 }}>
-//           <Typography
-//             variant="h4"
-//             component="h1"
-//             sx={{
-//               fontWeight: 800,
-//               color: 'text.primary',
-//               mb: 1,
-//             }}
-//           >
-//             Admin Dashboard 🛡️
-//           </Typography>
-//           <Typography
-//             variant="h6"
-//             sx={{
-//               color: 'text.secondary',
-//               fontWeight: 400,
-//             }}
-//           >
-//             Welcome back, {user?.user?.name || 'Admin'}! Monitor and manage the SWEEKAR platform.
-//           </Typography>
-//         </Box>
-
-//         {/* Quick Actions */}
-//         <Grid container spacing={3} sx={{ mb: 4 }}>
-//           <Grid item xs={12} sm={6} md={3}>
-//             <Button
-//               variant="contained"
-//               fullWidth
-//               startIcon={<People />}
-//               sx={{
-//                 py: 2,
-//                 borderRadius: 3,
-//                 bgcolor: 'primary.main',
-//                 '&:hover': { bgcolor: 'primary.dark' },
-//               }}
-//             >
-//               Manage Users
-//             </Button>
-//           </Grid>
-//           <Grid item xs={12} sm={6} md={3}>
-//             <Button
-//               variant="outlined"
-//               fullWidth
-//               startIcon={<Analytics />}
-//               sx={{
-//                 py: 2,
-//                 borderRadius: 3,
-//               }}
-//             >
-//               View Analytics
-//             </Button>
-//           </Grid>
-//           <Grid item xs={12} sm={6} md={3}>
-//             <Button
-//               variant="outlined"
-//               fullWidth
-//               startIcon={<Security />}
-//               sx={{
-//                 py: 2,
-//                 borderRadius: 3,
-//               }}
-//             >
-//               Security Center
-//             </Button>
-//           </Grid>
-//           <Grid item xs={12} sm={6} md={3}>
-//             <Button
-//               variant="outlined"
-//               fullWidth
-//               startIcon={<Settings />}
-//               sx={{
-//                 py: 2,
-//                 borderRadius: 3,
-//               }}
-//             >
-//               Platform Settings
-//             </Button>
-//           </Grid>
-//         </Grid>
-
-//         {/* Tabs */}
-//         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 4 }}>
-//           <Tabs value={tabValue} onChange={handleTabChange}>
-//             <Tab label="Overview" />
-//             <Tab label="Professional Approvals" />
-//             <Tab label="User Management" />
-//             <Tab label="Reports" />
-//             <Tab label="Settings" />
-//           </Tabs>
-//         </Box>
-
-//         {/* Tab Content */}
-//         {tabValue === 0 && renderOverview()}
-//         {tabValue === 1 && renderProfessionalApprovals()}
-//         {tabValue === 2 && (
-//           <Typography variant="h6" sx={{ textAlign: 'center', py: 4 }}>
-//             User Management Panel - Coming Soon
-//           </Typography>
-//         )}
-//         {tabValue === 3 && (
-//           <Typography variant="h6" sx={{ textAlign: 'center', py: 4 }}>
-//             Reports & Analytics - Coming Soon
-//           </Typography>
-//         )}
-//         {tabValue === 4 && (
-//           <Typography variant="h6" sx={{ textAlign: 'center', py: 4 }}>
-//             Platform Settings - Coming Soon
-//           </Typography>
-//         )}
-//       </Container>
-//     </Box>
-//   );
-// };
-
-// export default AdminDashboard;
-
-
-
 // src/pages/Dashboards/AdminDashboard.jsx
-import React, { useState, useEffect } from 'react';
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -622,14 +49,22 @@ import {
   Security,
   Settings,
   Block,
-  Email,
-  Phone,
-  LocationOn,
-  Work,
-  School,
-  Warning,
-  Download,
+  Delete,
+  Download, // Added Delete icon
 } from '@mui/icons-material';
+
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 
 // Import admin services
 import {
@@ -645,7 +80,34 @@ import {
   getPlatformSettings,
 } from '../../services/adminService';
 
+// Import the missing metrics function from userService
+import { getPlatformMetrics, getRecentUsers } from '../../services/userService';
+
 const MotionCard = motion(Card);
+
+const timeSince = (date) => {
+  if (!date) return 'just now';
+
+  const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+
+  const intervals = [
+    { label: 'year', seconds: 31536000 },
+    { label: 'month', seconds: 2592000 },
+    { label: 'day', seconds: 86400 },
+    { label: 'hour', seconds: 3600 },
+    { label: 'minute', seconds: 60 },
+    { label: 'second', seconds: 1 }
+  ];
+
+  for (const interval of intervals) {
+    const count = Math.floor(seconds / interval.seconds);
+    if (count >= 1) {
+      return `${count} ${interval.label}${count > 1 ? 's' : ''} ago`;
+    }
+  }
+
+  return 'just now';
+};
 
 const AdminDashboard = () => {
   const theme = useTheme();
@@ -653,14 +115,18 @@ const AdminDashboard = () => {
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  
+  const [error, setError] = useState('');
+
   // State for different sections
   const [platformStats, setPlatformStats] = useState({});
   const [pendingProfessionals, setPendingProfessionals] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [reports, setReports] = useState({});
   const [settings, setSettings] = useState({});
-  
+  const [metrics, setMetrics] = useState({});
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [chartData, setChartData] = useState({ revenue: [], users: [] });
+
   // Dialog states
   const [actionDialog, setActionDialog] = useState({
     open: false,
@@ -675,18 +141,34 @@ const AdminDashboard = () => {
   const fetchInitialData = async () => {
     setLoading(true);
     try {
-      const [statsRes, professionalsRes, usersRes, settingsRes] = await Promise.all([
+      // Corrected the Promise.all call to use the right function and handle the response
+      const [statsRes, professionalsRes, usersRes, settingsRes, metricsRes, activityRes] = await Promise.all([
         getPlatformStatistics(),
         getPendingProfessionals(),
         getAllUsers(),
         getPlatformSettings(),
+        getPlatformMetrics(), // Changed from getSystemMetrics to getPlatformMetrics
+        getRecentUsers(3), // Fetch recent users for activity feed
       ]);
 
       if (statsRes.success) setPlatformStats(statsRes.statistics);
+      if (statsRes.success) generateChartData(statsRes.statistics);
       if (professionalsRes.success) setPendingProfessionals(professionalsRes.professionals);
       if (usersRes.success) setAllUsers(usersRes.users);
       if (settingsRes.success) setSettings(settingsRes.settings);
+      if (metricsRes.success) setMetrics(metricsRes.metrics);
+      if (activityRes.success) {
+        // Add a type to each activity for styling/icon purposes
+        const formattedActivity = activityRes.users.map(u => ({
+          ...u,
+          type: u.role === 'PROFESSIONAL' ? 'New Professional' : 'New Client',
+          timestamp: u.createdAt?.toDate ? u.createdAt.toDate() : new Date(),
+        }));
+        setRecentActivity(formattedActivity);
+      }
+
     } catch (error) {
+      console.error("Failed to load dashboard data:", error);
       showSnackbar('Failed to load dashboard data', 'error');
     } finally {
       setLoading(false);
@@ -699,8 +181,6 @@ const AdminDashboard = () => {
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
-    
-    // Load specific data based on tab
     if (newValue === 3 && Object.keys(reports).length === 0) {
       fetchReports();
     }
@@ -725,7 +205,7 @@ const AdminDashboard = () => {
     });
   };
 
-  const handleRejectProfessional = async (professionalId, reason = '') => {
+  const handleRejectProfessional = async (professionalId) => {
     setActionDialog({
       open: true,
       type: 'reject',
@@ -737,7 +217,7 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
       let result;
-      
+
       if (action === 'approve') {
         result = await approveProfessional(professionalId);
         if (result.success) {
@@ -747,11 +227,12 @@ const AdminDashboard = () => {
       } else if (action === 'reject') {
         result = await rejectProfessional(professionalId, reason);
         if (result.success) {
+
           setPendingProfessionals(prev => prev.filter(p => p.id !== professionalId));
           showSnackbar('Professional rejected');
         }
       }
-      
+
       if (!result.success) {
         showSnackbar(result.error || 'Action failed', 'error');
       }
@@ -767,9 +248,9 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
       const result = await updateUserStatus(userId, newStatus);
-      
+
       if (result.success) {
-        setAllUsers(prev => prev.map(user => 
+        setAllUsers(prev => prev.map(user =>
           user.id === userId ? { ...user, status: newStatus } : user
         ));
         showSnackbar(`User status updated to ${newStatus}`);
@@ -788,7 +269,7 @@ const AdminDashboard = () => {
       try {
         setLoading(true);
         const result = await deleteUser(userId);
-        
+
         if (result.success) {
           setAllUsers(prev => prev.filter(user => user.id !== userId));
           showSnackbar('User deleted successfully');
@@ -803,23 +284,44 @@ const AdminDashboard = () => {
     }
   };
 
+  const generateChartData = (stats) => {
+    // Generate sample data for the last 30 days
+    const revenueData = [];
+    const userData = [];
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const shortDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+      revenueData.push({
+        date: shortDate,
+        revenue: Math.floor(Math.random() * 3000) + 1000,
+      });
+
+      userData.push({
+        date: shortDate,
+        newUsers: Math.floor(Math.random() * 15) + 5,
+      });
+    }
+    setChartData({ revenue: revenueData, users: userData });
+  };
+
   const renderOverview = () => (
     <Grid container spacing={4}>
-      {/* Platform Statistics */}
       <Grid item size={{ xs: 12 }}>
         <Grid container spacing={3} sx={{ mb: 4 }}>
           {[
-            { label: 'Total Users', value: platformStats.totalUsers || 0, icon: <People />, color: '#9D84B7', change: '+12%' },
-            { label: 'Professionals', value: platformStats.totalProfessionals || 0, icon: <Person />, color: '#F4A259', change: '+8%' },
-            { label: 'Total Revenue', value: `₹${(platformStats.totalRevenue || 0).toLocaleString()}`, icon: <AttachMoney />, color: '#4DAA57', change: '+15%' },
-            { label: 'Sessions', value: platformStats.totalSessions || 0, icon: <TrendingUp />, color: '#5899E2', change: '+22%' },
+            { label: 'Total Users', value: platformStats.totalUsers || 0, icon: <People />, color: '#9D84B7', change: metrics?.userGrowth ?? 0 },
+            { label: 'Professionals', value: platformStats.totalProfessionals || 0, icon: <Person />, color: '#F4A259', change: metrics?.professionalGrowth ?? 0 },
+            { label: 'Total Revenue', value: `₹${(platformStats.totalRevenue || 0).toLocaleString()}`, icon: <AttachMoney />, color: '#4DAA57', change: metrics?.revenueGrowth ?? 0 },
+            { label: 'Sessions', value: platformStats.totalSessions || 0, icon: <TrendingUp />, color: '#5899E2', change: metrics?.sessionGrowth ?? 0, isRate: true },
           ].map((stat, index) => (
-            <Grid item xs={12} sm={6} md={3} key={index}>
+            <Grid item key={index} size={{ xs: 12, sm: 6, md: 3 }}>
               <MotionCard
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                sx={{ p: 3, borderRadius: 3, border: `2px solid ${alpha(stat.color, 0.1)}`, '&:hover': { borderColor: stat.color, transform: 'translateY(-4px)', boxShadow: `0 10px 25px ${alpha(stat.color, 0.2)}`}, transition: 'all 0.3s ease' }}
+                sx={{ p: 3, borderRadius: 3, border: `2px solid ${alpha(stat.color, 0.1)}`, '&:hover': { borderColor: stat.color, transform: 'translateY(-4px)', boxShadow: `0 10px 25px ${alpha(stat.color, 0.2)}` }, transition: 'all 0.3s ease' }}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box>
@@ -830,9 +332,9 @@ const AdminDashboard = () => {
                       {stat.label}
                     </Typography>
                     <Chip
-                      label={stat.change}
+                      label={`${stat.change > 0 ? '+' : ''}${stat.change}%`}
                       size="small"
-                      sx={{ bgcolor: alpha(theme.palette.success.main, 0.1), color: 'success.main', fontWeight: 600 }}
+                      sx={{ bgcolor: alpha(stat.change >= 0 ? theme.palette.success.main : theme.palette.error.main, 0.1), color: stat.change >= 0 ? 'success.main' : 'error.main', fontWeight: 600 }}
                     />
                   </Box>
                   <Box sx={{
@@ -850,35 +352,34 @@ const AdminDashboard = () => {
         </Grid>
       </Grid>
 
-      {/* Recent Activity and Quick Actions */}
       <Grid item xs={12} md={8}>
         <MotionCard initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} sx={{ borderRadius: 3, mb: 4 }}>
           <CardContent sx={{ p: 4 }}>
-            <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
-              Recent Activity
-            </Typography>
-            {/* Add recent activity feed here */}
+            <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>Recent Activity</Typography>
             <Stack spacing={2}>
-              <Paper sx={{ p: 2, bgcolor: alpha(theme.palette.info.main, 0.05) }}>
-                <Typography variant="body2">
-                  <strong>Dr. Priya Sharma</strong> submitted professional verification documents
-                </Typography>
-                <Typography variant="caption" color="text.secondary">2 hours ago</Typography>
-              </Paper>
-              <Paper sx={{ p: 2, bgcolor: alpha(theme.palette.success.main, 0.05) }}>
-                <Typography variant="body2">
-                  <strong>Alex Kumar</strong> completed their first session
-                </Typography>
-                <Typography variant="caption" color="text.secondary">4 hours ago</Typography>
-              </Paper>
-              <Paper sx={{ p: 2, bgcolor: alpha(theme.palette.warning.main, 0.05) }}>
-                <Typography variant="body2">
-                  Payment dispute raised for booking <strong>#BK123456</strong>
-                </Typography>
-                <Typography variant="caption" color="text.secondary">6 hours ago</Typography>
-              </Paper>
+              {recentActivity.length > 0 ? (
+                recentActivity.map((activity) => (
+                  <Paper
+                    key={activity.id}
+                    sx={{
+                      p: 2,
+                      bgcolor: activity.type === 'New Professional'
+                        ? alpha(theme.palette.info.main, 0.05)
+                        : alpha(theme.palette.success.main, 0.05)
+                    }}
+                  >
+                    <Typography variant="body2">
+                      <strong>{activity.displayName || 'A new user'}</strong> just registered as a <strong>{activity.role}</strong>.
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {timeSince(activity.timestamp)}
+                    </Typography>
+                  </Paper>
+                ))
+              ) : (
+                <Typography color="text.secondary">No recent activity to display.</Typography>
+              )}
             </Stack>
-            {/* --- FIX ENDS HERE --- */}
           </CardContent>
         </MotionCard>
       </Grid>
@@ -886,19 +387,11 @@ const AdminDashboard = () => {
       <Grid item xs={12} md={4}>
         <MotionCard initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.2 }} sx={{ borderRadius: 3 }}>
           <CardContent sx={{ p: 4 }}>
-            <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
-              Quick Actions
-            </Typography>
+            <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>Quick Actions</Typography>
             <Stack spacing={2}>
-              <Button variant="contained" fullWidth startIcon={<People />} onClick={() => setTabValue(2)}>
-                Manage Users
-              </Button>
-              <Button variant="outlined" fullWidth startIcon={<Analytics />} onClick={() => setTabValue(3)}>
-                View Reports
-              </Button>
-              <Button variant="outlined" fullWidth startIcon={<Settings />} onClick={() => setTabValue(4)}>
-                Platform Settings
-              </Button>
+              <Button variant="contained" fullWidth startIcon={<People />} onClick={() => setTabValue(2)}>Manage Users</Button>
+              <Button variant="outlined" fullWidth startIcon={<Analytics />} onClick={() => setTabValue(3)}>View Reports</Button>
+              <Button variant="outlined" fullWidth startIcon={<Settings />} onClick={() => setTabValue(4)}>Platform Settings</Button>
             </Stack>
           </CardContent>
         </MotionCard>
@@ -910,11 +403,10 @@ const AdminDashboard = () => {
     <Grid container spacing={4}>
       <Grid item xs={12}>
         <MotionCard initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} sx={{ borderRadius: 3 }}>
-          <CardContent sx={{ p: 4 }}>
+          <CardContent sx={{ p: 4, minWidth: '95vw' }}>
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
               Pending Professional Approvals ({pendingProfessionals.length})
             </Typography>
-
             <TableContainer>
               <Table>
                 <TableHead>
@@ -923,53 +415,47 @@ const AdminDashboard = () => {
                     <TableCell>Profession</TableCell>
                     <TableCell>Experience</TableCell>
                     <TableCell>Location</TableCell>
+                    <TableCell>Submitted On</TableCell>
+                    <TableCell>Documents</TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {pendingProfessionals.length > 0 ? pendingProfessionals.map((prof) => (
-                    <TableRow key={prof.id}>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <Avatar sx={{ bgcolor: 'primary.main' }}>
-                            {professional.name?.charAt(0)}
-                          </Avatar>
-                          <Box>
-                            <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                              {professional.name}
-                            </Typography>
-                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                              {professional.email}
-                            </Typography>
+                  {pendingProfessionals.length > 0 ? (
+                    pendingProfessionals.map((prof) => (
+                      <TableRow key={prof.id}>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Avatar sx={{ bgcolor: 'primary.main' }}>{prof.displayName?.charAt(0)}</Avatar>
+                            <Box>
+                              <Typography variant="body1" sx={{ fontWeight: 600 }}>{prof.displayName}</Typography>
+                              <Typography variant="body2" sx={{ color: 'text.secondary' }}>{prof.email}</Typography>
+                            </Box>
                           </Box>
-                        </Box>
-                      </TableCell>
-                      <TableCell>{professional.profession}</TableCell>
-                      <TableCell>{professional.experience} years</TableCell>
-                      <TableCell>{professional.location}</TableCell>
-                      <TableCell>{new Date(professional.submittedDate?.toDate?.() || professional.submittedDate).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <Stack direction="row" spacing={1} flexWrap="wrap">
-                          {professional.documents?.map((doc, index) => (
-                            <Chip key={index} label={doc} size="small" color="success" variant="outlined" />
-                          ))}
-                        </Stack>
-                      </TableCell>
-                      <TableCell>
-                        <Stack direction="row" spacing={1}>
-                          <IconButton size="small" color="primary" onClick={() => console.log('View details:', professional.id)}>
-                            <Visibility />
-                          </IconButton>
-                          <IconButton size="small" color="success" onClick={() => handleApproveProfessional(professional.id)}>
-                            <CheckCircle />
-                          </IconButton>
-                          <IconButton size="small" color="error" onClick={() => handleRejectProfessional(professional.id)}>
-                            <Cancel />
-                          </IconButton>
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell>{prof.profession}</TableCell>
+                        <TableCell>{prof.years_of_experience || prof.experience} years</TableCell>
+                        <TableCell>{prof.location}</TableCell>
+                        <TableCell>{new Date(prof.submittedDate?.toDate?.() || prof.submittedDate).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <Stack direction="row" spacing={1} flexWrap="wrap">
+                            {prof.documents?.map((doc, index) => (
+                              <Chip key={index} label={doc} size="small" color="success" variant="outlined" />
+                            ))}
+                          </Stack>
+                        </TableCell>
+                        <TableCell>
+                          <Stack direction="row" spacing={1}>
+                            <IconButton size="small" color="primary" onClick={() => console.log('View details:', prof.id)}><Visibility /></IconButton>
+                            <IconButton size="small" color="success" onClick={() => handleApproveProfessional(prof.id)}><CheckCircle /></IconButton>
+                            <IconButton size="small" color="error" onClick={() => handleRejectProfessional(prof.id)}><Cancel /></IconButton>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow><TableCell colSpan={7} align="center">No pending approvals</TableCell></TableRow>
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -983,16 +469,11 @@ const AdminDashboard = () => {
     <Grid container spacing={4}>
       <Grid item xs={12}>
         <MotionCard initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} sx={{ borderRadius: 3 }}>
-          <CardContent sx={{ p: 4 }}>
+          <CardContent sx={{ p: 4, minWidth: '95vw' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-              <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                User Management ({allUsers.length} users)
-              </Typography>
-              <Button variant="outlined" startIcon={<Download />}>
-                Export Users
-              </Button>
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>User Management ({allUsers.length} users)</Typography>
+              <Button variant="outlined" startIcon={<Download />}>Export Users</Button>
             </Box>
-
             <TableContainer>
               <Table>
                 <TableHead>
@@ -1010,50 +491,22 @@ const AdminDashboard = () => {
                     <TableRow key={user.id}>
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <Avatar src={user.photoURL} sx={{ bgcolor: 'primary.main' }}>
-                            {user.displayName?.charAt(0) || user.email?.charAt(0)}
-                          </Avatar>
+                          <Avatar src={user.photoURL} sx={{ bgcolor: 'primary.main' }}>{user.displayName?.charAt(0) || user.email?.charAt(0)}</Avatar>
                           <Box>
-                            <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                              {user.displayName || 'No name'}
-                            </Typography>
-                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                              {user.email}
-                            </Typography>
+                            <Typography variant="body1" sx={{ fontWeight: 600 }}>{user.displayName || 'No name'}</Typography>
+                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>{user.email}</Typography>
                           </Box>
                         </Box>
                       </TableCell>
-                      <TableCell>
-                        <Chip label={user.role} size="small" color="primary" />
-                      </TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={user.status || 'active'} 
-                          size="small" 
-                          color={user.status === 'active' ? 'success' : 'warning'} 
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {new Date(user.createdAt?.toDate?.() || user.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        {user.lastLoginAt ? new Date(user.lastLoginAt.toDate()).toLocaleDateString() : 'Never'}
-                      </TableCell>
+                      <TableCell><Chip label={user.role} size="small" color="primary" /></TableCell>
+                      <TableCell><Chip label={user.status || 'active'} size="small" color={user.status === 'active' ? 'success' : 'warning'} /></TableCell>
+                      <TableCell>{new Date(user.createdAt?.toDate?.() || user.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell>{user.lastLoginAt ? new Date(user.lastLoginAt.toDate()).toLocaleDateString() : 'Never'}</TableCell>
                       <TableCell>
                         <Stack direction="row" spacing={1}>
-                          <IconButton size="small" onClick={() => console.log('View user:', user.id)}>
-                            <Visibility />
-                          </IconButton>
-                          <IconButton 
-                            size="small" 
-                            color={user.status === 'active' ? 'warning' : 'success'}
-                            onClick={() => handleUserStatusChange(user.id, user.status === 'active' ? 'suspended' : 'active')}
-                          >
-                            <Block />
-                          </IconButton>
-                          <IconButton size="small" color="error" onClick={() => handleDeleteUser(user.id)}>
-                            <Delete />
-                          </IconButton>
+                          <IconButton size="small" onClick={() => console.log('View user:', user.id)}><Visibility /></IconButton>
+                          <IconButton size="small" color={user.status === 'active' ? 'warning' : 'success'} onClick={() => handleUserStatusChange(user.id, user.status === 'active' ? 'suspended' : 'active')}><Block /></IconButton>
+                          <IconButton size="small" color="error" onClick={() => handleDeleteUser(user.id)}><Delete /></IconButton>
                         </Stack>
                       </TableCell>
                     </TableRow>
@@ -1067,64 +520,42 @@ const AdminDashboard = () => {
     </Grid>
   );
 
+  // ... (renderReports and renderSettings can remain the same)
   const renderReports = () => (
     <Grid container spacing={4}>
-      <Grid item xs={12}>
-        <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
-          Platform Reports & Analytics
-        </Typography>
+      <Grid item size={{ xs: 12 }}>
+        <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>Platform Reports & Analytics</Typography>
       </Grid>
-      
-      {/* Revenue Reports */}
-      <Grid item xs={12} md={6}>
+      <Grid item size={{ xs: 12, md: 6 }}>
         <MotionCard initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} sx={{ borderRadius: 3 }}>
-          <CardContent sx={{ p: 4 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
-              Revenue Analytics
-            </Typography>
-            {/* Add chart component here */}
-            <Box sx={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.50', borderRadius: 2 }}>
-              <Typography color="text.secondary">Revenue Chart Placeholder</Typography>
-            </Box>
+          <CardContent >
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, textAlign: 'center' }}>Revenue Analytics (Last 30 Days)</Typography>
+            <ResponsiveContainer width="100%" height={250}>
+              <AreaChart data={chartData.revenue}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" sx={{ fontSize: '0.4rem', fontWeight: 500 }} />
+                <YAxis sx={{ fontSize: '0.875rem', fontWeight: 500 }} />
+                <Tooltip />
+                <Area type="monotone" dataKey="revenue" stroke={theme.palette.primary.main} fill={alpha(theme.palette.primary.main, 0.2)} />
+              </AreaChart>
+            </ResponsiveContainer>
           </CardContent>
         </MotionCard>
       </Grid>
-
-      {/* User Growth */}
-      <Grid item xs={12} md={6}>
+      <Grid item size={{ xs: 12, md: 6 }}>
         <MotionCard initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} sx={{ borderRadius: 3 }}>
-          <CardContent sx={{ p: 4 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
-              User Growth
-            </Typography>
-            <Box sx={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.50', borderRadius: 2 }}>
-              <Typography color="text.secondary">User Growth Chart Placeholder</Typography>
-            </Box>
-          </CardContent>
-        </MotionCard>
-      </Grid>
-
-      {/* Export Options */}
-      <Grid item xs={12}>
-        <MotionCard initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} sx={{ borderRadius: 3 }}>
-          <CardContent sx={{ p: 4 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
-              Export Reports
-            </Typography>
-            <Stack direction="row" spacing={2}>
-              <Button variant="contained" startIcon={<Download />}>
-                User Report
-              </Button>
-              <Button variant="outlined" startIcon={<Download />}>
-                Revenue Report
-              </Button>
-              <Button variant="outlined" startIcon={<Download />}>
-                Session Report
-              </Button>
-              <Button variant="outlined" startIcon={<Download />}>
-                Professional Report
-              </Button>
-            </Stack>
+          <CardContent >
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, textAlign: 'center' }}>User Growth (Last 30 Days)</Typography>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={chartData.users}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="newUsers" stroke={theme.palette.secondary.main} />
+              </LineChart>
+            </ResponsiveContainer>
           </CardContent>
         </MotionCard>
       </Grid>
@@ -1133,13 +564,13 @@ const AdminDashboard = () => {
 
   const renderSettings = () => (
     <Grid container spacing={4}>
-      <Grid item xs={12}>
+      <Grid item size={{ xs: 12 }}>
         <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
           Platform Settings
         </Typography>
       </Grid>
-      
-      <Grid item xs={12} md={6}>
+
+      <Grid item size={{ xs: 12, md: 6 }}>
         <MotionCard initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} sx={{ borderRadius: 3 }}>
           <CardContent sx={{ p: 4 }}>
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
@@ -1150,27 +581,27 @@ const AdminDashboard = () => {
                 fullWidth
                 label="Platform Name"
                 value={settings.platformName || 'SWEEKAR'}
-                onChange={(e) => setSettings({...settings, platformName: e.target.value})}
+                onChange={(e) => setSettings({ ...settings, platformName: e.target.value })}
               />
               <TextField
                 fullWidth
                 label="Support Email"
                 value={settings.supportEmail || 'support@sweekar.com'}
-                onChange={(e) => setSettings({...settings, supportEmail: e.target.value})}
+                onChange={(e) => setSettings({ ...settings, supportEmail: e.target.value })}
               />
               <TextField
                 fullWidth
                 label="Default Session Duration (minutes)"
                 type="number"
                 value={settings.defaultSessionDuration || 60}
-                onChange={(e) => setSettings({...settings, defaultSessionDuration: e.target.value})}
+                onChange={(e) => setSettings({ ...settings, defaultSessionDuration: e.target.value })}
               />
             </Stack>
           </CardContent>
         </MotionCard>
       </Grid>
 
-      <Grid item xs={12} md={6}>
+      <Grid item size={{ xs: 12, md: 6 }}>
         <MotionCard initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} sx={{ borderRadius: 3 }}>
           <CardContent sx={{ p: 4 }}>
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
@@ -1182,14 +613,14 @@ const AdminDashboard = () => {
                 label="Platform Commission (%)"
                 type="number"
                 value={settings.platformCommission || 10}
-                onChange={(e) => setSettings({...settings, platformCommission: e.target.value})}
+                onChange={(e) => setSettings({ ...settings, platformCommission: e.target.value })}
               />
               <FormControl fullWidth>
                 <InputLabel>Default Currency</InputLabel>
                 <Select
                   value={settings.defaultCurrency || 'INR'}
                   label="Default Currency"
-                  onChange={(e) => setSettings({...settings, defaultCurrency: e.target.value})}
+                  onChange={(e) => setSettings({ ...settings, defaultCurrency: e.target.value })}
                 >
                   <MenuItem value="INR">INR - Indian Rupee</MenuItem>
                   <MenuItem value="USD">USD - US Dollar</MenuItem>
@@ -1201,7 +632,7 @@ const AdminDashboard = () => {
                 label="Minimum Booking Notice (hours)"
                 type="number"
                 value={settings.minimumBookingNotice || 24}
-                onChange={(e) => setSettings({...settings, minimumBookingNotice: e.target.value})}
+                onChange={(e) => setSettings({ ...settings, minimumBookingNotice: e.target.value })}
               />
             </Stack>
           </CardContent>
@@ -1210,8 +641,8 @@ const AdminDashboard = () => {
 
       <Grid item xs={12}>
         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
-          <Button 
-            variant="contained" 
+          <Button
+            variant="contained"
             size="large"
             onClick={async () => {
               try {
@@ -1237,10 +668,10 @@ const AdminDashboard = () => {
     </Grid>
   );
 
+
   return (
     <Box sx={{ py: 4, bgcolor: 'background.default', minHeight: '100vh' }}>
       <Container maxWidth="xl">
-        {/* Welcome Header */}
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" component="h1" sx={{ fontWeight: 800, color: 'text.primary', mb: 1 }}>
             Admin Dashboard 🛡️
@@ -1251,11 +682,9 @@ const AdminDashboard = () => {
         </Box>
 
         {error && <Alert severity="error" sx={{ mb: 4 }}>{error}</Alert>}
-
         {loading && <LinearProgress sx={{ mb: 2 }} />}
 
-        {/* Tabs */}
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 4 , minWidth: "95vw"}}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 4, minWidth: "95vw" }}>
           <Tabs value={tabValue} onChange={handleTabChange}>
             <Tab label="Overview" />
             <Tab label={`Professional Approvals (${pendingProfessionals.length})`} />
@@ -1265,55 +694,31 @@ const AdminDashboard = () => {
           </Tabs>
         </Box>
 
-        {/* Tab Content */}
         {tabValue === 0 && renderOverview()}
         {tabValue === 1 && renderProfessionalApprovals()}
         {tabValue === 2 && renderUserManagement()}
         {tabValue === 3 && renderReports()}
         {tabValue === 4 && renderSettings()}
 
-        {/* Action Confirmation Dialog */}
+
         <Dialog open={actionDialog.open} onClose={() => setActionDialog({ open: false, type: null, data: null })}>
-          <DialogTitle>
-            {actionDialog.type === 'approve' ? 'Approve Professional' : 'Reject Professional'}
-          </DialogTitle>
+          <DialogTitle>{actionDialog.type === 'approve' ? 'Approve Professional' : 'Reject Professional'}</DialogTitle>
           <DialogContent>
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              Are you sure you want to {actionDialog.type} <strong>{actionDialog.data?.name}</strong>?
-            </Typography>
+            <Typography variant="body1" sx={{ mb: 2 }}>Are you sure you want to {actionDialog.type} <strong>{actionDialog.data?.displayName}</strong>?</Typography>
             {actionDialog.type === 'reject' && (
-              <TextField
-                fullWidth
-                label="Reason for rejection"
-                multiline
-                rows={3}
-                sx={{ mt: 2 }}
-              />
+              <TextField fullWidth label="Reason for rejection" multiline rows={3} sx={{ mt: 2 }} />
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setActionDialog({ open: false, type: null, data: null })}>
-              Cancel
-            </Button>
-            <Button 
-              variant="contained" 
-              color={actionDialog.type === 'approve' ? 'success' : 'error'}
-              onClick={() => confirmProfessionalAction(actionDialog.type, actionDialog.data?.id, '')}
-            >
+            <Button onClick={() => setActionDialog({ open: false, type: null, data: null })}>Cancel</Button>
+            <Button variant="contained" color={actionDialog.type === 'approve' ? 'success' : 'error'} onClick={() => confirmProfessionalAction(actionDialog.type, actionDialog.data?.id, '')}>
               {actionDialog.type === 'approve' ? 'Approve' : 'Reject'}
             </Button>
           </DialogActions>
         </Dialog>
 
-        {/* Snackbar */}
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={6000}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-        >
-          <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })}>
-            {snackbar.message}
-          </Alert>
+        <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+          <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })}>{snackbar.message}</Alert>
         </Snackbar>
       </Container>
     </Box>
@@ -1321,48 +726,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-
-
-//  {platformMetrics ? (
-//                 <>
-//                   {/* User Growth */}
-//                   <Box>
-//                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-//                       <Typography variant="body2">User Growth (Last 30d)</Typography>
-//                       {/* Dynamic value show karo */}
-//                       <Typography variant="body2" sx={{ fontWeight: 600 }}>{platformMetrics.userGrowth}%</Typography>
-//                     </Box>
-//                     <LinearProgress variant="determinate" value={platformMetrics.userGrowth} sx={{ height: 8, borderRadius: 4, bgcolor: alpha(theme.palette.primary.main, 0.1) }} />
-//                   </Box>
-                  
-//                   {/* Professional Growth */}
-//                   <Box>
-//                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-//                       <Typography variant="body2">Professional Growth (Last 30d)</Typography>
-//                       <Typography variant="body2" sx={{ fontWeight: 600 }}>{platformMetrics.professionalGrowth}%</Typography>
-//                     </Box>
-//                     <LinearProgress variant="determinate" value={platformMetrics.professionalGrowth} sx={{ height: 8, borderRadius: 4, bgcolor: alpha(theme.palette.secondary.main, 0.1), '& .MuiLinearProgress-bar': { bgcolor: 'secondary.main' }}} />
-//                   </Box>
-
-//                   {/* Revenue Growth */}
-//                   <Box>
-//                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-//                       <Typography variant="body2">Revenue Growth (Last 30d)</Typography>
-//                       <Typography variant="body2" sx={{ fontWeight: 600 }}>{platformMetrics.revenueGrowth}%</Typography>
-//                     </Box>
-//                     <LinearProgress variant="determinate" value={platformMetrics.revenueGrowth} sx={{ height: 8, borderRadius: 4, bgcolor: alpha(theme.palette.success.main, 0.1), '& .MuiLinearProgress-bar': { bgcolor: 'success.main' }}} />
-//                   </Box>
-
-//                   {/* Satisfaction Rate */}
-//                   <Box>
-//                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-//                       <Typography variant="body2">Satisfaction Rate</Typography>
-//                       <Typography variant="body2" sx={{ fontWeight: 600 }}>{platformMetrics.satisfactionRate}%</Typography>
-//                     </Box>
-//                     <LinearProgress variant="determinate" value={platformMetrics.satisfactionRate} sx={{ height: 8, borderRadius: 4, bgcolor: alpha(theme.palette.info.main, 0.1), '& .MuiLinearProgress-bar': { bgcolor: 'info.main' }}} />
-//                   </Box>
-//                 </>
-//               ) : (
-//                 // Agar data fetch nahi hua hai to ye message dikhao
-//                 <Typography>Metrics data is not available.</Typography>
-//               )}

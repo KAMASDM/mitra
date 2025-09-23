@@ -200,15 +200,18 @@ export const deleteUser = async (userId, reason = '') => {
 // Get pending professional approvals
 export const getPendingProfessionals = async () => {
   try {
+    // 1. Simplified Query: Remove orderBy to avoid needing a composite index.
     const q = query(
       collection(db, PROFESSIONALS_COLLECTION),
-      where('verification_status', '==', 'PENDING'),
-      orderBy('createdAt', 'desc')
+      where('verification_status', '==', 'PENDING')
     );
     
     const querySnapshot = await getDocs(q);
-    const professionals = [];
     
+    if (querySnapshot.empty) {
+      return { professionals: [], success: true };
+    }
+
     // Get user data for each professional
     const professionalPromises = querySnapshot.docs.map(async (docSnap) => {
       const professionalData = { id: docSnap.id, ...docSnap.data() };
@@ -217,19 +220,33 @@ export const getPendingProfessionals = async () => {
         const userDoc = await getDoc(doc(db, USERS_COLLECTION, professionalData.user_id));
         if (userDoc.exists()) {
           const userData = userDoc.data();
+          // Merge professional data with user data for display
           return {
             ...professionalData,
-            name: userData.displayName || `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
+            displayName: userData.displayName || `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
             email: userData.email,
-            submittedDate: professionalData.createdAt,
+            submittedDate: professionalData.createdAt, // Use createdAt for submission date
           };
         }
       }
       
-      return professionalData;
+      // Return professional data even if user is not found, with placeholders
+      return {
+        ...professionalData,
+        displayName: 'User Not Found',
+        email: 'N/A',
+        submittedDate: professionalData.createdAt,
+      };
     });
     
-    const resolvedProfessionals = await Promise.all(professionalPromises);
+    let resolvedProfessionals = await Promise.all(professionalPromises);
+
+    // 2. Sort in JavaScript: Manually sort the results after fetching.
+    resolvedProfessionals.sort((a, b) => {
+      const dateA = a.submittedDate?.toDate?.() || a.submittedDate || 0;
+      const dateB = b.submittedDate?.toDate?.() || b.submittedDate || 0;
+      return new Date(dateB) - new Date(dateA); // Sort descending (newest first)
+    });
     
     return { professionals: resolvedProfessionals, success: true };
   } catch (error) {
@@ -237,6 +254,7 @@ export const getPendingProfessionals = async () => {
     return { error: error.message, success: false };
   }
 };
+
 
 // Approve professional
 export const approveProfessional = async (professionalId, notes = '') => {
