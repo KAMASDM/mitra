@@ -32,34 +32,25 @@ const AUDIT_LOGS_COLLECTION = 'audit_logs';
 
 // =================== USER MANAGEMENT ===================
 
+export const getProfessionalTypes = async () => {
+  try {
+    const typesSnapshot = await getDocs(collection(db, 'professional_types'));
+    const types = typesSnapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
+    return { types, success: true };
+  } catch (error) {
+    console.error('Error getting professional types:', error);
+    return { error: error.message, success: false };
+  }
+};
+
 // Get all users with pagination and filters
 export const getAllUsers = async (filters = {}) => {
   try {
     let q = collection(db, USERS_COLLECTION);
     const queryConstraints = [];
 
-    // Apply filters
     if (filters.role) {
       queryConstraints.push(where('role', '==', filters.role));
-    }
-
-    if (filters.status) {
-      queryConstraints.push(where('status', '==', filters.status));
-    }
-
-    if (filters.startDate && filters.endDate) {
-      queryConstraints.push(
-        where('createdAt', '>=', Timestamp.fromDate(new Date(filters.startDate))),
-        where('createdAt', '<=', Timestamp.fromDate(new Date(filters.endDate)))
-      );
-    }
-
-    // Add ordering
-    queryConstraints.push(orderBy('createdAt', 'desc'));
-
-    // Add limit if specified
-    if (filters.limit) {
-      queryConstraints.push(limit(filters.limit));
     }
 
     q = query(q, ...queryConstraints);
@@ -68,15 +59,27 @@ export const getAllUsers = async (filters = {}) => {
     const users = [];
     querySnapshot.forEach((doc) => {
       const userData = doc.data();
+
+      // --- FIX IS HERE ---
+
+      // 1. "Joined" date ke liye 'created_at' ka istemal karein
+      const createdAtTimestamp = userData.created_at || userData.createdAt;
+      const createdAtDate = createdAtTimestamp?.toDate ? createdAtTimestamp.toDate() : null;
+
+      // 2. "Last Login" date ke liye 'last_login_at' ka istemal karein
+      const lastLoginTimestamp = userData.last_login_at; // Yahan galti thi
+      const lastLoginDate = lastLoginTimestamp?.toDate ? lastLoginTimestamp.toDate() : null;
+
       users.push({
         id: doc.id,
         ...userData,
-         createdAt: userData.createdAt?.toDate?.() || userData.createdAt,
-      // FIX: Correctly read the snake_case field from Firestore
-      // and convert it to a Date object for the frontend.
-      lastLoginAt: userData.last_login_at?.toDate?.() || null,
+        createdAt: createdAtDate,   // Joined date ko assign karein
+        lastLoginAt: lastLoginDate, // Last Login date ko assign karein
       });
     });
+
+    // Client-side par data ko sort karein
+    users.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
     return { users, success: true };
   } catch (error) {
@@ -84,6 +87,8 @@ export const getAllUsers = async (filters = {}) => {
     return { error: error.message, success: false };
   }
 };
+
+
 
 // Get user statistics
 export const getUserStatistics = async () => {

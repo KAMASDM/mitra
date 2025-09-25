@@ -28,25 +28,25 @@ const values = [
     icon: <Security />,
     title: 'Safe & Secure',
     description: 'Your privacy and security are our top priorities. All communications are encrypted and confidential.',
-    color: '#9D84B7',
+    color: '#5C4033',
   },
   {
     icon: <Diversity3 />,
     title: 'Inclusive Community',
     description: 'We celebrate diversity and create a welcoming space for everyone, regardless of identity or background.',
-    color: '#F4A259',
+    color: '#5C4033',
   },
   {
     icon: <VerifiedUser />,
     title: 'Verified Professionals',
     description: 'All our professionals are thoroughly vetted, licensed, and trained in inclusive care practices.',
-    color: '#4DAA57',
+    color: '#5C4033',
   },
   {
     icon: <SupportAgent />,
     title: '24/7 Support',
     description: 'Our support team is always available to help you find the right professional and get the care you need.',
-    color: '#5899E2',
+    color: '#5C4033',
   },
 ];
 

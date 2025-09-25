@@ -33,6 +33,7 @@ import {
   ExpandMore,
   AdminPanelSettings,
 } from "@mui/icons-material";
+import SweekarLogo from '../../assets/Logo.webp'; // Import the logo
 
 const navItems = [
   { label: "Home", path: "/" },
@@ -144,16 +145,7 @@ const Navbar = () => {
                   }}
                   onClick={() => navigate("/")}
                 >
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      fontWeight: 'bold',
-                      color: trigger ? "white" : theme.palette.primary.main,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    SWEEKAR
-                  </Typography>
+                   <img src={SweekarLogo} alt="Sweekar Logo" style={{ height: '45px', filter: trigger ? 'brightness(0) invert(1)' : 'none' }} />
                 </Box>
               </>
             ) : (
@@ -167,15 +159,7 @@ const Navbar = () => {
                   }}
                   onClick={() => navigate("/")}
                 >
-                  <Typography
-                    variant="h5"
-                    sx={{
-                      fontWeight: 'bold',
-                      color: trigger ? "white" : theme.palette.primary.main,
-                    }}
-                  >
-                    SWEEKAR
-                  </Typography>
+                  <img src={SweekarLogo} alt="Sweekar Logo" style={{ height: '50px', filter: trigger ? 'brightness(0) invert(1)' : 'none' }} />
                 </Box>
                 <Stack
                   spacing={3}
@@ -352,9 +336,7 @@ const Navbar = () => {
         }}
       >
         <Box sx={{ p: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Typography variant="h6" sx={{ fontWeight: 'bold', color: theme.palette.primary.main }}>
-            SWEEKAR
-          </Typography>
+          <img src={SweekarLogo} alt="Sweekar Logo" style={{ height: '40px' }} />
           <IconButton onClick={handleDrawerToggle}>
             <CloseIcon />
           </IconButton>

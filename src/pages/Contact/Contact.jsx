@@ -38,28 +38,28 @@ const contactMethods = [
     title: 'Email Us',
     description: 'Send us an email and we\'ll respond within 24 hours',
     contact: 'support@sweekar.com',
-    color: '#9D84B7',
+    color: '#5C4033',
   },
   {
     icon: <Phone />,
     title: 'Call Us',
     description: 'Speak directly with our support team',
     contact: '+91 9876543210',
-    color: '#F4A259',
+    color: '#5C4033',
   },
   {
     icon: <LocationOn />,
     title: 'Visit Us',
     description: 'Come visit our office for in-person support',
     contact: 'Mumbai, Maharashtra, India',
-    color: '#4DAA57',
+    color: '#5C4033',
   },
   {
     icon: <Schedule />,
     title: 'Office Hours',
     description: 'We\'re available during business hours',
     contact: 'Mon-Fri: 9AM-6PM IST',
-    color: '#5899E2',
+    color: '#5C4033',
   },
 ];
 

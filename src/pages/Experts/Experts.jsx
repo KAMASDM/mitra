@@ -52,7 +52,7 @@ const Experts = () => {
   const [sortBy, setSortBy] = useState('newest');
 
   // UI state from old code
-  const [viewMode, setViewMode] = useState('grid');
+  const [viewMode, setViewMode] = useState('list');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
 

@@ -1,5 +1,5 @@
 // src/pages/Dashboards/AdminDashboard.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Container,
@@ -35,6 +35,8 @@ import {
   MenuItem,
   Alert,
   Snackbar,
+  TablePagination,
+  Divider,
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import {
@@ -79,7 +81,8 @@ import {
   updatePlatformSettings,
   getPlatformSettings,
   getPlatformMetrics,
-  getRecentUsers
+  getRecentUsers,
+  getProfessionalTypes
 } from '../../services/adminService';
 
 // Import the missing metrics function from userService
@@ -128,6 +131,18 @@ const AdminDashboard = () => {
   const [metrics, setMetrics] = useState({});
   const [recentActivity, setRecentActivity] = useState([]);
   const [chartData, setChartData] = useState({ revenue: [], users: [] });
+  const [professionalTypes, setProfessionalTypes] = useState([]);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  // Dialog states
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userDetailsDialogOpen, setUserDetailsDialogOpen] = useState(false);
+
+  // --- FIX: State for Professional Details Dialog ---
+  const [selectedProfessional, setSelectedProfessional] = useState(null);
+  const [professionalDetailsDialogOpen, setProfessionalDetailsDialogOpen] = useState(false);
+
+
 
   // Dialog states
   const [actionDialog, setActionDialog] = useState({
@@ -136,21 +151,31 @@ const AdminDashboard = () => {
     data: null,
   });
 
+  const professionalTypeMap = useMemo(() => {
+    if (!professionalTypes) return {};
+    return professionalTypes.reduce((acc, type) => {
+      acc[type.id] = type.title;
+      return acc;
+    }, {});
+  }, [professionalTypes]);
+
   useEffect(() => {
     fetchInitialData();
   }, []);
+
 
   const fetchInitialData = async () => {
     setLoading(true);
     try {
       // Corrected the Promise.all call to use the right function and handle the response
-      const [statsRes, professionalsRes, usersRes, settingsRes, metricsRes, activityRes] = await Promise.all([
+      const [statsRes, professionalsRes, usersRes, settingsRes, metricsRes, activityRes, typesRes] = await Promise.all([
         getPlatformStatistics(),
         getPendingProfessionals(),
         getAllUsers(),
         getPlatformSettings(),
         getPlatformMetrics(), // Changed from getSystemMetrics to getPlatformMetrics
         getRecentUsers(3), // Fetch recent users for activity feed
+        getProfessionalTypes
       ]);
 
       if (statsRes.success) setPlatformStats(statsRes.statistics);
@@ -159,6 +184,7 @@ const AdminDashboard = () => {
       if (usersRes.success) setAllUsers(usersRes.users);
       if (settingsRes.success) setSettings(settingsRes.settings);
       if (metricsRes.success) setMetrics(metricsRes.metrics);
+      if (typesRes.success) setProfessionalTypes(typesRes.types);
       if (activityRes.success) {
         // Add a type to each activity for styling/icon purposes
         const formattedActivity = activityRes.users.map(u => ({
@@ -307,6 +333,174 @@ const AdminDashboard = () => {
     }
     setChartData({ revenue: revenueData, users: userData });
   };
+  const handleViewUser = (user) => {
+    setSelectedUser(user);
+    setUserDetailsDialogOpen(true);
+  };
+  const UserDetailsDialog = ({ user, open, onClose }) => {
+    if (!user) return null;
+    
+
+    return (
+      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700, pb: 2 }}>User Details</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={3} sx={{ mt: 1 }}>
+            <Grid item xs={12} sx={{ textAlign: 'center' }}>
+              <Avatar
+                src={user.photoURL}
+                sx={{ width: 100, height: 100, mx: 'auto', mb: 2, bgcolor: 'primary.main', fontSize: '3rem' }}
+              >
+                {(user.displayName || user.email || 'U')?.charAt(0).toUpperCase()}
+              </Avatar>
+              <Typography variant="h6">{user.displayName || 'No name'}</Typography>
+              <Chip
+                label={user.role || 'Client'}
+                color="primary"
+                size="small"
+                sx={{ mt: 1 }}
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <Stack spacing={1.5}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Email Address</Typography>
+                  <Typography variant="body1">{user.email}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Status</Typography>
+                  <Chip
+                    label={user.status || 'active'}
+                    color={user.status === 'active' ? 'success' : 'warning'}
+                    size="small"
+                  />
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Joined On</Typography>
+                  <Typography variant="body1">
+                    {user.createdAt ? new Date(user.createdAt).toLocaleString() : 'N/A'}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Last Login</Typography>
+                  <Typography variant="body1">
+                    {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : 'Never'}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={onClose}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    );
+  };
+
+  const handleViewProfessional = (professional) => {
+    setSelectedProfessional(professional);
+    setProfessionalDetailsDialogOpen(true);
+  };
+
+    const ProfessionalDetailsDialog = ({ professional, open, onClose }) => {
+    if (!professional) return null;
+
+    return (
+      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700, pb: 2 }}>Professional Approval Details</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={3} sx={{ mt: 1 }}>
+            <Grid item xs={12} md={4} sx={{ textAlign: 'center' }}>
+              <Avatar
+                src={professional.photoURL}
+                sx={{ width: 100, height: 100, mx: 'auto', mb: 2, bgcolor: 'primary.main', fontSize: '3rem' }}
+              >
+                {(professional.displayName || 'P')?.charAt(0).toUpperCase()}
+              </Avatar>
+              <Typography variant="h6">{professional.displayName || 'No name'}</Typography>
+              <Chip 
+                label={professional.profession} 
+                color="secondary" 
+                size="small" 
+                sx={{ mt: 1 }}
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={8}>
+                <Stack spacing={2}>
+                    <Box>
+                        <Typography variant="caption" color="text.secondary">Email Address</Typography>
+                        <Typography variant="body1">{professional.email}</Typography>
+                    </Box>
+                    <Grid container spacing={2}>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="text.secondary">Experience</Typography>
+                        <Typography variant="body1">{professional.years_of_experience || professional.experience} years</Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="text.secondary">Location</Typography>
+                        <Typography variant="body1">{professional.location || 'N/A'}</Typography>
+                      </Grid>
+                    </Grid>
+                    <Box>
+                        <Typography variant="caption" color="text.secondary">Submitted On</Typography>
+                        <Typography variant="body1">
+                            {new Date(professional.submittedDate?.toDate?.() || professional.submittedDate).toLocaleString()}
+                        </Typography>
+                    </Box>
+                </Stack>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Divider sx={{ my: 1 }} />
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Submitted Documents</Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap">
+                {professional.documents && professional.documents.length > 0 ? (
+                  professional.documents.map((doc, index) => (
+                    <Chip 
+                      key={index} 
+                      icon={<FilePresent />} 
+                      label={doc} 
+                      variant="outlined"
+                      color="success"
+                      onClick={() => alert(`Viewing document: ${doc}`)} // Placeholder action
+                    />
+                  ))
+                ) : (
+                  <Typography color="text.secondary">No documents submitted.</Typography>
+                )}
+              </Stack>
+            </Grid>
+
+          </Grid>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={onClose}>Close</Button>
+          <Button 
+            color="error" 
+            onClick={() => {
+              handleRejectProfessional(professional.id);
+              onClose();
+            }}
+          >
+            Reject
+          </Button>
+          <Button 
+            variant="contained" 
+            color="success"
+            onClick={() => {
+              handleApproveProfessional(professional.id);
+              onClose();
+            }}
+          >
+            Approve
+          </Button>
+        </DialogActions>
+      </Dialog>
+    );
+  };
 
   const renderOverview = () => (
     <Grid container spacing={4}>
@@ -424,7 +618,7 @@ const AdminDashboard = () => {
                 </TableHead>
                 <TableBody>
                   {pendingProfessionals.length > 0 ? (
-                    pendingProfessionals.map((prof) => (
+                    pendingProfessionals.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((prof) => (
                       <TableRow key={prof.id}>
                         <TableCell>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -437,8 +631,8 @@ const AdminDashboard = () => {
                         </TableCell>
                         <TableCell>{prof.profession}</TableCell>
                         <TableCell> {Number(prof.years_of_experience || prof.experience) > 0
-                            ? `${prof.years_of_experience || prof.experience} years`
-                            : 'No Experience'}</TableCell>
+                          ? `${prof.years_of_experience || prof.experience} years`
+                          : 'No Experience'}</TableCell>
                         <TableCell>{prof.location}</TableCell>
                         <TableCell>{new Date(prof.submittedDate?.toDate?.() || prof.submittedDate).toLocaleDateString()}</TableCell>
                         <TableCell>
@@ -450,7 +644,7 @@ const AdminDashboard = () => {
                         </TableCell>
                         <TableCell>
                           <Stack direction="row" spacing={1}>
-                            <IconButton size="small" color="primary" onClick={() => console.log('View details:', prof.id)}><Visibility /></IconButton>
+                            <IconButton size="small" color="primary" onClick={() => handleViewProfessional(prof)}><Visibility /></IconButton>
                             <IconButton size="small" color="success" onClick={() => handleApproveProfessional(prof.id)}><CheckCircle /></IconButton>
                             <IconButton size="small" color="error" onClick={() => handleRejectProfessional(prof.id)}><Cancel /></IconButton>
                           </Stack>
@@ -463,11 +657,24 @@ const AdminDashboard = () => {
                 </TableBody>
               </Table>
             </TableContainer>
+            <TablePagination
+              rowsPerPageOptions={[10, 25, 50]}
+              component="div"
+              count={pendingProfessionals.length}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={(event, newPage) => setPage(newPage)}
+              onRowsPerPageChange={(event) => {
+                setRowsPerPage(parseInt(event.target.value, 10));
+                setPage(0);
+              }}
+            />
           </CardContent>
         </MotionCard>
       </Grid>
     </Grid>
   );
+
 
   const renderUserManagement = () => (
     <Grid container spacing={4}>
@@ -475,7 +682,7 @@ const AdminDashboard = () => {
         <MotionCard initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} sx={{ borderRadius: 3 }}>
           <CardContent sx={{ p: 4, minWidth: '95vw' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-              <Typography variant="h5" sx={{ fontWeight: 700 }}>User Management ({allUsers.length} users)</Typography>
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>User Management ({allUsers.length})</Typography>
               <Button variant="outlined" startIcon={<Download />}>Export Users</Button>
             </Box>
             <TableContainer>
@@ -491,26 +698,40 @@ const AdminDashboard = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {allUsers.slice(0, 10).map((user) => (
+                  {allUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((user) => (
                     <TableRow key={user.id}>
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <Avatar src={user.photoURL} sx={{ bgcolor: 'primary.main' }}>{user.displayName?.charAt(0) || user.email?.charAt(0)}</Avatar>
+                          <Avatar src={user.photoURL} sx={{ bgcolor: 'primary.main' }}>
+                            {/* FIX: Your existing code for name fallback is already good! */}
+                            {(user.displayName || user.email || 'U')?.charAt(0).toUpperCase()}
+                          </Avatar>
                           <Box>
                             <Typography variant="body1" sx={{ fontWeight: 600 }}>{user.displayName || 'No name'}</Typography>
                             <Typography variant="body2" sx={{ color: 'text.secondary' }}>{user.email}</Typography>
                           </Box>
                         </Box>
                       </TableCell>
-                      <TableCell><Chip label={user.role} size="small" color="primary" /></TableCell>
-                      <TableCell><Chip label={user.status || 'active'} size="small" color={user.status === 'active' ? 'success' : 'warning'} /></TableCell>
-                      <TableCell>{new Date(user.createdAt?.toDate?.() || user.createdAt).toLocaleDateString()}</TableCell>
-                      <TableCell> {user.lastLoginAt
-                        ? new Date(user.lastLoginAt).toLocaleDateString()
-                        : 'Never'}</TableCell>
+                      <TableCell>
+                        {/* FIX: Add a fallback for the role to prevent a blank chip */}
+                        <Chip label={user.role || 'Client'} size="small" color="primary" />
+                      </TableCell>
+                      <TableCell>
+                        <Chip label={user.status || 'active'} size="small" color={user.status === 'active' ? 'success' : 'warning'} />
+                      </TableCell>
+                      <TableCell>
+                        {user.createdAt
+                          ? new Date(user.createdAt).toLocaleDateString()
+                          : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        {user.lastLoginAt
+                          ? new Date(user.lastLoginAt).toLocaleDateString()
+                          : 'Never'}
+                      </TableCell>
                       <TableCell>
                         <Stack direction="row" spacing={1}>
-                          <IconButton size="small" onClick={() => console.log('View user:', user.id)}><Visibility /></IconButton>
+                          <IconButton size="small" onClick={() => handleViewUser(user)}><Visibility /></IconButton>
                           <IconButton size="small" color={user.status === 'active' ? 'warning' : 'success'} onClick={() => handleUserStatusChange(user.id, user.status === 'active' ? 'suspended' : 'active')}><Block /></IconButton>
                           <IconButton size="small" color="error" onClick={() => handleDeleteUser(user.id)}><Delete /></IconButton>
                         </Stack>
@@ -520,6 +741,18 @@ const AdminDashboard = () => {
                 </TableBody>
               </Table>
             </TableContainer>
+            <TablePagination
+              rowsPerPageOptions={[10, 25, 50]}
+              component="div"
+              count={allUsers.length}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={(event, newPage) => setPage(newPage)}
+              onRowsPerPageChange={(event) => {
+                setRowsPerPage(parseInt(event.target.value, 10));
+                setPage(0);
+              }}
+            />
           </CardContent>
         </MotionCard>
       </Grid>
@@ -706,6 +939,17 @@ const AdminDashboard = () => {
         {tabValue === 3 && renderReports()}
         {tabValue === 4 && renderSettings()}
 
+        <UserDetailsDialog
+          user={selectedUser}
+          open={userDetailsDialogOpen}
+          onClose={() => setUserDetailsDialogOpen(false)}
+        />
+
+         <ProfessionalDetailsDialog
+          professional={selectedProfessional}
+          open={professionalDetailsDialogOpen}
+          onClose={() => setProfessionalDetailsDialogOpen(false)}
+        />
 
         <Dialog open={actionDialog.open} onClose={() => setActionDialog({ open: false, type: null, data: null })}>
           <DialogTitle>{actionDialog.type === 'approve' ? 'Approve Professional' : 'Reject Professional'}</DialogTitle>

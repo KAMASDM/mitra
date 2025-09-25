@@ -37,25 +37,25 @@ const platformFeatures = [
     icon: <Security />,
     title: 'End-to-End Security',
     description: 'All your conversations and data are encrypted and completely confidential. Your privacy is our top priority.',
-    color: '#9D84B7',
+    color: '#5C4033',
   },
   {
     icon: <VerifiedUser />,
     title: 'Verified Professionals',
     description: 'Every professional is thoroughly vetted, licensed, and trained in inclusive care practices.',
-    color: '#F4A259',
+    color: '#5C4033',
   },
   {
     icon: <Schedule />,
     title: 'Flexible Scheduling',
     description: 'Book appointments that fit your schedule with easy rescheduling and cancellation options.',
-    color: '#4DAA57',
+    color: '#5C4033',
   },
   {
     icon: <Support />,
     title: '24/7 Support',
     description: 'Our dedicated support team is always available to help you with any questions or concerns.',
-    color: '#5899E2',
+    color: '#5C4033',
   },
 ];
 
@@ -65,21 +65,21 @@ const sessionTypes = [
     title: 'Video Sessions',
     description: 'Face-to-face consultations from the comfort of your home',
     features: ['HD Video Quality', 'Screen Sharing', 'Recording Options', 'Multi-device Support'],
-    color: '#9D84B7',
+    color: '#5C4033',
   },
   {
     icon: <Phone />,
     title: 'Phone Consultations',
     description: 'Voice-only sessions for maximum privacy and convenience',
     features: ['Crystal Clear Audio', 'Anonymous Options', 'Call Recording', 'Mobile Friendly'],
-    color: '#F4A259',
+    color: '#5C4033',
   },
   {
     icon: <LocationOn />,
     title: 'In-Person Meetings',
     description: 'Traditional face-to-face sessions at professional clinics',
     features: ['Safe Locations', 'Verified Venues', 'Accessibility Options', 'Parking Available'],
-    color: '#4DAA57',
+    color: '#5C4033',
   },
 ];
 

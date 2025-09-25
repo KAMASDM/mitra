@@ -17,10 +17,10 @@ import { ArrowForward, Psychology, Gavel, LocalHospital, Work } from "@mui/icons
 const MotionBox = motion(Box);
 
 const services = [
-  { id: 1, title: "Mental Health", icon: <Psychology />, color: "#9D84B7" },
-  { id: 2, title: "Legal Aid", icon: <Gavel />, color: "#F4A259" },
-  { id: 3, title: "Medical Services", icon: <LocalHospital />, color: "#4DAA57" },
-  { id: 4, title: "Career Guidance", icon: <Work />, color: "#5899E2" },
+  { id: 1, title: "Mental Health", icon: <Psychology />, color: "#5C4033" },
+  { id: 2, title: "Legal Aid", icon: <Gavel />, color: "#5C4033" },
+  { id: 3, title: "Medical Services", icon: <LocalHospital />, color: "#5C4033" },
+  { id: 4, title: "Career Guidance", icon: <Work />, color: "#5C4033" },
 ];
 
 const Hero = () => {
