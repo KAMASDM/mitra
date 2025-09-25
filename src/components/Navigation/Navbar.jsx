@@ -108,12 +108,13 @@ const Navbar = () => {
         position="fixed"
         sx={{
           backgroundColor: trigger
-            ? "rgba(157, 132, 183, 0.95)"
+            ? "#8b6c5c73"
             : "rgba(255, 255, 255, 0.95)",
           height: trigger ? "70px" : "80px",
           transition: "all 0.3s ease-in-out",
           backdropFilter: "blur(10px)",
           boxShadow: trigger ? "0 4px 20px rgba(0, 0, 0, 0.1)" : "none",
+          borderRadius:'0'
         }}
       >
         <Container maxWidth="xl">

@@ -37,25 +37,25 @@ const platformFeatures = [
     icon: <Security />,
     title: 'End-to-End Security',
     description: 'All your conversations and data are encrypted and completely confidential. Your privacy is our top priority.',
-    color: '#9D84B7',
+    color: '#5C4033',
   },
   {
     icon: <VerifiedUser />,
     title: 'Verified Professionals',
     description: 'Every professional is thoroughly vetted, licensed, and trained in inclusive care practices.',
-    color: '#F4A259',
+    color: '#5C4033',
   },
   {
     icon: <Schedule />,
     title: 'Flexible Scheduling',
     description: 'Book appointments that fit your schedule with easy rescheduling and cancellation options.',
-    color: '#4DAA57',
+    color: '#5C4033',
   },
   {
     icon: <Support />,
     title: '24/7 Support',
     description: 'Our dedicated support team is always available to help you with any questions or concerns.',
-    color: '#5899E2',
+    color: '#5C4033',
   },
 ];
 
@@ -65,21 +65,21 @@ const sessionTypes = [
     title: 'Video Sessions',
     description: 'Face-to-face consultations from the comfort of your home',
     features: ['HD Video Quality', 'Screen Sharing', 'Recording Options', 'Multi-device Support'],
-    color: '#9D84B7',
+    color: '#5C4033',
   },
   {
     icon: <Phone />,
     title: 'Phone Consultations',
     description: 'Voice-only sessions for maximum privacy and convenience',
     features: ['Crystal Clear Audio', 'Anonymous Options', 'Call Recording', 'Mobile Friendly'],
-    color: '#F4A259',
+    color: '#5C4033',
   },
   {
     icon: <LocationOn />,
     title: 'In-Person Meetings',
     description: 'Traditional face-to-face sessions at professional clinics',
     features: ['Safe Locations', 'Verified Venues', 'Accessibility Options', 'Parking Available'],
-    color: '#4DAA57',
+    color: '#5C4033',
   },
 ];
 
@@ -458,7 +458,7 @@ const Features = () => {
           <Grid container spacing={4}>
             <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
               <Box sx={{ textAlign: 'center' }}>
-                <Language sx={{ fontSize: '3rem', color: 'primary.main', mb: 2 }} />
+                <Language sx={{ fontSize: '3rem', color: 'primary.dark', mb: 2 }} />
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
                   Multi-Language Support
                 </Typography>
@@ -470,7 +470,7 @@ const Features = () => {
 
             <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
               <Box sx={{ textAlign: 'center' }}>
-                <AccessTime sx={{ fontSize: '3rem', color: 'secondary.main', mb: 2 }} />
+                <AccessTime sx={{ fontSize: '3rem', color: 'primary.dark', mb: 2 }} />
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
                   Instant Booking
                 </Typography>
@@ -482,7 +482,7 @@ const Features = () => {
 
             <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
               <Box sx={{ textAlign: 'center' }}>
-                <Star sx={{ fontSize: '3rem', color: 'warning.main', mb: 2 }} />
+                <Star sx={{ fontSize: '3rem', color: 'primary.dark', mb: 2 }} />
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
                   Rating System
                 </Typography>
@@ -494,7 +494,7 @@ const Features = () => {
 
             <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
               <Box sx={{ textAlign: 'center' }}>
-                <Support sx={{ fontSize: '3rem', color: 'success.main', mb: 2 }} />
+                <Support sx={{ fontSize: '3rem', color: 'primary.dark', mb: 2 }} />
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
                   Crisis Support
                 </Typography>

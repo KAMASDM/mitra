@@ -9,7 +9,7 @@ import {
   GoogleAuthProvider,
   FacebookAuthProvider
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 
 // Create user profile in Firestore
@@ -80,22 +80,25 @@ export const signInWithEmailAndPassword_Custom = async (email, password) => {
 
     if (userSnap.exists()) {
       const userData = userSnap.data();
-      console.log("Firestore data found:", userData); 
+      console.log("Firestore data found:", userData);
+
+      // *** FIX: Update last login time on successful sign-in ***
+      await updateUserLastLogin(user.uid);
 
       return {
         user: {
           ...user,
-          ...userData 
+          ...userData
         },
         success: true
       };
     } else {
-      console.error("USER NOT FOUND IN FIRESTORE. UID:", user.uid); 
+      console.error("USER NOT FOUND IN FIRESTORE. UID:", user.uid);
       return { error: 'User profile not found in database.', success: false };
     }
 
   } catch (error) {
-    console.error('CRITICAL SIGN-IN ERROR:', error); 
+    console.error('CRITICAL SIGN-IN ERROR:', error);
     return { error: error.message, success: false };
   }
 };
@@ -134,14 +137,17 @@ export const signInWithGoogle = async () => {
       provider: 'google',
       isActive: true
     });
-    
+
     // Fetch the user's profile to get the role and other data
     const userProfile = await getDoc(doc(db, 'users', user.uid));
     const userData = userProfile.data();
 
-    return { 
-        user: { ...user, ...userData }, 
-        success: true 
+    // *** FIX: Update last login time on successful sign-in ***
+    await updateUserLastLogin(user.uid);
+
+    return {
+      user: { ...user, ...userData },
+      success: true
     };
 
   } catch (error) {
@@ -161,14 +167,14 @@ export const signInWithFacebook = async () => {
       provider: 'facebook',
       isActive: true
     });
-    
+
     // Fetch the user's profile to get the role and other data
     const userProfile = await getDoc(doc(db, 'users', user.uid));
     const userData = userProfile.data();
 
-    return { 
-      user: { ...user, ...userData }, 
-      success: true 
+    return {
+      user: { ...user, ...userData },
+      success: true
     };
   } catch (error) {
     console.error('Error signing in with Facebook:', error);
@@ -205,5 +211,18 @@ export const getCurrentUserProfile = async (userId) => {
   } catch (error) {
     console.error('Error getting user profile:', error);
     return { error: error.message, success: false };
+  }
+};
+
+export const updateUserLastLogin = async (userId) => {
+  if (!userId) return;
+  const userRef = doc(db, 'users', userId);
+  try {
+    // Use serverTimestamp() for accuracy across different client machines
+    await updateDoc(userRef, { last_login_at: serverTimestamp() });
+    console.log("Updated last_login_at for user:", userId);
+  } catch (error) {
+    console.error("Error updating last login time:", error);
+    // This is a non-critical error, so we don't need to throw it
   }
 };

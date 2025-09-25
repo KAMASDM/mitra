@@ -64,7 +64,7 @@ const About = () => {
     <Box
       sx={{
         py: { xs: 8, md: 12 },
-        bgcolor: 'background.paper',
+        // bgcolor: 'background.paper',
       }}
     >
       <Container maxWidth="lg">

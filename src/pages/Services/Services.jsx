@@ -34,7 +34,7 @@ const services = [
     title: 'Mental Health Services',
     description: 'Professional counseling and therapy services with LGBTQAI+ and women-friendly therapists.',
     icon: <Psychology />,
-    color: '#9D84B7',
+    color: '#5C4033',
     features: ['Individual Therapy', 'Group Sessions', 'Crisis Support', 'Online Counseling'],
     price: 'Starting from ₹1,500/session'
   },
@@ -43,7 +43,7 @@ const services = [
     title: 'Legal Aid Services',
     description: 'Legal consultation and support for rights protection, discrimination cases, and family matters.',
     icon: <Gavel />,
-    color: '#F4A259',
+    color: '#5C4033',
     features: ['Legal Consultation', 'Document Assistance', 'Court Representation', 'Rights Advocacy'],
     price: 'Starting from ₹2,000/consultation'
   },
@@ -52,7 +52,7 @@ const services = [
     title: 'Medical Services',
     description: 'Inclusive healthcare services with understanding and specialized medical professionals.',
     icon: <LocalHospital />,
-    color: '#4DAA57',
+    color: '#5C4033',
     features: ['General Medicine', 'Specialized Care', 'Health Checkups', 'Hormone Therapy Guidance'],
     price: 'Starting from ₹800/consultation'
   },
@@ -61,7 +61,7 @@ const services = [
     title: 'Career & Placement',
     description: 'Professional career guidance, skill development, and job placement assistance.',
     icon: <Work />,
-    color: '#5899E2',
+    color: '#5C4033',
     features: ['Career Counseling', 'Skill Development', 'Job Placement', 'Interview Preparation'],
     price: 'Starting from ₹1,200/session'
   },
@@ -70,7 +70,7 @@ const services = [
     title: 'Educational Support',
     description: 'Academic guidance, scholarship assistance, and educational counseling services.',
     icon: <School />,
-    color: '#8E44AD',
+    color: '#5C4033',
     features: ['Academic Counseling', 'Scholarship Guidance', 'Course Selection', 'Educational Planning'],
     price: 'Starting from ₹1,000/session'
   },
@@ -79,7 +79,7 @@ const services = [
     title: 'Housing Assistance',
     description: 'Safe housing options, rental assistance, and accommodation support services.',
     icon: <Home />,
-    color: '#E74C3C',
+    color: '#5C4033',
     features: ['Housing Search', 'Rental Assistance', 'Legal Guidance', 'Safe Accommodation'],
     price: 'Starting from ₹500/consultation'
   },
@@ -88,7 +88,7 @@ const services = [
     title: 'Support Groups',
     description: 'Community support groups and peer counseling for emotional and social support.',
     icon: <SupportAgent />,
-    color: '#16A085',
+    color: '#5C4033',
     features: ['Peer Support', 'Group Therapy', 'Community Events', 'Mentorship Programs'],
     price: 'Starting from ₹300/session'
   },
@@ -97,7 +97,7 @@ const services = [
     title: 'Financial Guidance',
     description: 'Financial planning, investment advice, and loan assistance services.',
     icon: <AccountBalance />,
-    color: '#F39C12',
+    color: '#5C4033',
     features: ['Financial Planning', 'Investment Advice', 'Loan Assistance', 'Budgeting Help'],
     price: 'Starting from ₹1,500/consultation'
   },
@@ -240,7 +240,7 @@ const Services = () => {
                     fullWidth
                     onClick={() => navigate('/experts')}
                     sx={{
-                      bgcolor: service.color,
+                      bgcolor: theme.palette.primary.main,
                       '&:hover': {
                         bgcolor: service.color,
                         filter: 'brightness(0.9)',

@@ -42,7 +42,7 @@ export const getAllUsers = async (filters = {}) => {
     if (filters.role) {
       queryConstraints.push(where('role', '==', filters.role));
     }
-    
+
     if (filters.status) {
       queryConstraints.push(where('status', '==', filters.status));
     }
@@ -64,15 +64,17 @@ export const getAllUsers = async (filters = {}) => {
 
     q = query(q, ...queryConstraints);
     const querySnapshot = await getDocs(q);
-    
+
     const users = [];
     querySnapshot.forEach((doc) => {
       const userData = doc.data();
       users.push({
         id: doc.id,
         ...userData,
-        createdAt: userData.createdAt?.toDate?.() || userData.createdAt,
-        lastLoginAt: userData.lastLoginAt?.toDate?.() || userData.lastLoginAt,
+         createdAt: userData.createdAt?.toDate?.() || userData.createdAt,
+      // FIX: Correctly read the snake_case field from Firestore
+      // and convert it to a Date object for the frontend.
+      lastLoginAt: userData.last_login_at?.toDate?.() || null,
       });
     });
 
@@ -93,13 +95,13 @@ export const getUserStatistics = async () => {
     ]);
 
     const users = [];
-    usersSnapshot.forEach(doc => users.push({...doc.data(), id: doc.id}));
-    
+    usersSnapshot.forEach(doc => users.push({ ...doc.data(), id: doc.id }));
+
     const professionals = [];
-    professionalsSnapshot.forEach(doc => professionals.push({...doc.data(), id: doc.id}));
-    
+    professionalsSnapshot.forEach(doc => professionals.push({ ...doc.data(), id: doc.id }));
+
     const bookings = [];
-    bookingsSnapshot.forEach(doc => bookings.push({...doc.data(), id: doc.id}));
+    bookingsSnapshot.forEach(doc => bookings.push({ ...doc.data(), id: doc.id }));
 
     const stats = {
       totalUsers: users.length,
@@ -205,9 +207,9 @@ export const getPendingProfessionals = async () => {
       collection(db, PROFESSIONALS_COLLECTION),
       where('verification_status', '==', 'PENDING')
     );
-    
+
     const querySnapshot = await getDocs(q);
-    
+
     if (querySnapshot.empty) {
       return { professionals: [], success: true };
     }
@@ -215,7 +217,7 @@ export const getPendingProfessionals = async () => {
     // Get user data for each professional
     const professionalPromises = querySnapshot.docs.map(async (docSnap) => {
       const professionalData = { id: docSnap.id, ...docSnap.data() };
-      
+
       if (professionalData.user_id) {
         const userDoc = await getDoc(doc(db, USERS_COLLECTION, professionalData.user_id));
         if (userDoc.exists()) {
@@ -229,7 +231,7 @@ export const getPendingProfessionals = async () => {
           };
         }
       }
-      
+
       // Return professional data even if user is not found, with placeholders
       return {
         ...professionalData,
@@ -238,7 +240,7 @@ export const getPendingProfessionals = async () => {
         submittedDate: professionalData.createdAt,
       };
     });
-    
+
     let resolvedProfessionals = await Promise.all(professionalPromises);
 
     // 2. Sort in JavaScript: Manually sort the results after fetching.
@@ -247,7 +249,7 @@ export const getPendingProfessionals = async () => {
       const dateB = b.submittedDate?.toDate?.() || b.submittedDate || 0;
       return new Date(dateB) - new Date(dateA); // Sort descending (newest first)
     });
-    
+
     return { professionals: resolvedProfessionals, success: true };
   } catch (error) {
     console.error('Error getting pending professionals:', error);
@@ -261,11 +263,11 @@ export const approveProfessional = async (professionalId, notes = '') => {
   try {
     const professionalRef = doc(db, PROFESSIONALS_COLLECTION, professionalId);
     const professionalDoc = await getDoc(professionalRef);
-    
+
     if (!professionalDoc.exists()) {
       return { error: 'Professional not found', success: false };
     }
-    
+
     const professionalData = professionalDoc.data();
     const batch = writeBatch(db);
 
@@ -320,11 +322,11 @@ export const rejectProfessional = async (professionalId, reason = '') => {
   try {
     const professionalRef = doc(db, PROFESSIONALS_COLLECTION, professionalId);
     const professionalDoc = await getDoc(professionalRef);
-    
+
     if (!professionalDoc.exists()) {
       return { error: 'Professional not found', success: false };
     }
-    
+
     const professionalData = professionalDoc.data();
     const batch = writeBatch(db);
 
@@ -429,26 +431,26 @@ export const getPlatformStatistics = async () => {
       totalProfessionals: professionalsSnapshot.size,
       newUsersThisMonth: users.filter(u => u.createdAt && u.createdAt >= thirtyDaysAgo).length,
       newUsersThisWeek: users.filter(u => u.createdAt && u.createdAt >= sevenDaysAgo).length,
-      
+
       // Booking statistics
       totalSessions: bookings.length,
       completedSessions: bookings.filter(b => b.status === 'completed').length,
       cancelledSessions: bookings.filter(b => b.status === 'cancelled').length,
       pendingSessions: bookings.filter(b => b.status === 'pending' || b.status === 'confirmed').length,
-      
+
       // Revenue statistics
       totalRevenue: payments.reduce((sum, p) => sum + (p.amount || 0), 0),
       revenueThisMonth: payments.filter(p => p.createdAt && p.createdAt >= thirtyDaysAgo).reduce((sum, p) => sum + (p.amount || 0), 0),
       revenueThisWeek: payments.filter(p => p.createdAt && p.createdAt >= sevenDaysAgo).reduce((sum, p) => sum + (p.amount || 0), 0),
-      
+
       // Platform metrics
       averageSessionValue: bookings.length > 0 ? payments.reduce((sum, p) => sum + (p.amount || 0), 0) / bookings.filter(b => b.status === 'completed').length : 0,
       conversionRate: users.length > 0 ? (bookings.length / users.length) * 100 : 0,
-      
+
       // Reviews and ratings
       totalReviews: reviewsSnapshot.size,
       averageRating: calculateAverageRating(reviewsSnapshot),
-      
+
       // Growth metrics
       userGrowthRate: calculateGrowthRate(users, thirtyDaysAgo),
       revenueGrowthRate: calculateRevenueGrowthRate(payments, thirtyDaysAgo),
@@ -495,7 +497,7 @@ export const getSystemReports = async (reportType = 'all', dateRange = {}) => {
 export const exportData = async (dataType, format = 'csv', filters = {}) => {
   try {
     let data = [];
-    
+
     switch (dataType) {
       case 'users':
         const usersResult = await getAllUsers(filters);
@@ -503,28 +505,28 @@ export const exportData = async (dataType, format = 'csv', filters = {}) => {
           data = usersResult.users;
         }
         break;
-      
+
       case 'bookings':
         const bookingsQuery = await getDocs(collection(db, BOOKINGS_COLLECTION));
         bookingsQuery.forEach(doc => {
           data.push({ id: doc.id, ...doc.data() });
         });
         break;
-      
+
       case 'professionals':
         const professionalsQuery = await getDocs(collection(db, PROFESSIONALS_COLLECTION));
         professionalsQuery.forEach(doc => {
           data.push({ id: doc.id, ...doc.data() });
         });
         break;
-      
+
       default:
         throw new Error('Invalid data type');
     }
 
     // Generate the export file
     const exportResult = await generateReport(data, format, dataType);
-    
+
     return { exportUrl: exportResult.url, success: true };
   } catch (error) {
     console.error('Error exporting data:', error);
@@ -538,7 +540,7 @@ export const exportData = async (dataType, format = 'csv', filters = {}) => {
 export const getPlatformSettings = async () => {
   try {
     const settingsDoc = await getDoc(doc(db, PLATFORM_SETTINGS_COLLECTION, 'general'));
-    
+
     if (settingsDoc.exists()) {
       return { settings: settingsDoc.data(), success: true };
     } else {
@@ -556,7 +558,7 @@ export const getPlatformSettings = async () => {
         smsNotifications: false,
         maintenanceMode: false,
       };
-      
+
       return { settings: defaultSettings, success: true };
     }
   } catch (error) {
@@ -569,7 +571,7 @@ export const getPlatformSettings = async () => {
 export const updatePlatformSettings = async (settings) => {
   try {
     const settingsRef = doc(db, PLATFORM_SETTINGS_COLLECTION, 'general');
-    
+
     await setDoc(settingsRef, {
       ...settings,
       updatedAt: new Date(),
@@ -604,7 +606,7 @@ const getCurrentAdminId = () => {
 const calculateAverageRating = (reviewsSnapshot) => {
   let totalRating = 0;
   let count = 0;
-  
+
   reviewsSnapshot.forEach(doc => {
     const data = doc.data();
     if (data.rating) {
@@ -612,7 +614,7 @@ const calculateAverageRating = (reviewsSnapshot) => {
       count++;
     }
   });
-  
+
   return count > 0 ? (totalRating / count).toFixed(1) : 0;
 };
 
@@ -620,7 +622,7 @@ const calculateAverageRating = (reviewsSnapshot) => {
 const calculateGrowthRate = (users, fromDate) => {
   const oldUsers = users.filter(u => u.createdAt && u.createdAt < fromDate).length;
   const newUsers = users.filter(u => u.createdAt && u.createdAt >= fromDate).length;
-  
+
   return oldUsers > 0 ? ((newUsers / oldUsers) * 100).toFixed(1) : 0;
 };
 
@@ -629,11 +631,11 @@ const calculateRevenueGrowthRate = (payments, fromDate) => {
   const oldRevenue = payments
     .filter(p => p.createdAt && p.createdAt < fromDate)
     .reduce((sum, p) => sum + (p.amount || 0), 0);
-  
+
   const newRevenue = payments
     .filter(p => p.createdAt && p.createdAt >= fromDate)
     .reduce((sum, p) => sum + (p.amount || 0), 0);
-  
+
   return oldRevenue > 0 ? ((newRevenue / oldRevenue) * 100).toFixed(1) : 0;
 };
 
@@ -668,4 +670,89 @@ const sendUserStatusNotification = async (email, newStatus, reason) => {
 const sendProfessionalApprovalEmail = async (email, approved, notes) => {
   // Implementation for sending approval/rejection emails
   console.log(`Sending ${approved ? 'approval' : 'rejection'} email to ${email}: ${notes}`);
+};
+
+export const getPlatformMetrics = async () => {
+  try {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
+    const sixtyDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 60);
+
+    // --- User Growth ---
+    const usersQuery = query(collection(db, USERS_COLLECTION), where('createdAt', '>=', Timestamp.fromDate(thirtyDaysAgo)));
+    const prevUsersQuery = query(collection(db, USERS_COLLECTION), where('createdAt', '>=', Timestamp.fromDate(sixtyDaysAgo)), where('createdAt', '<', Timestamp.fromDate(thirtyDaysAgo)));
+    const recentUsersSnap = await getDocs(usersQuery);
+    const prevUsersSnap = await getDocs(prevUsersQuery);
+    const userGrowth = prevUsersSnap.size > 0 ? ((recentUsersSnap.size - prevUsersSnap.size) / prevUsersSnap.size) * 100 : recentUsersSnap.size > 0 ? 100 : 0;
+
+    // --- Professional Growth ---
+    const profsQuery = query(
+      collection(db, USERS_COLLECTION),
+      where('role', '==', 'PROFESSIONAL'),
+      where('createdAt', '>=', Timestamp.fromDate(thirtyDaysAgo))
+    );
+    const prevProfsQuery = query(
+      collection(db, USERS_COLLECTION),
+      where('role', '==', 'PROFESSIONAL'),
+      where('createdAt', '>=', Timestamp.fromDate(sixtyDaysAgo)),
+      where('createdAt', '<', Timestamp.fromDate(thirtyDaysAgo))
+    );
+    const recentProfsSnap = await getDocs(profsQuery);
+    const prevProfsSnap = await getDocs(prevProfsQuery);
+    const professionalGrowth = prevProfsSnap.size > 0 ? ((recentProfsSnap.size - prevProfsSnap.size) / prevProfsSnap.size) * 100 : recentProfsSnap.size > 0 ? 100 : 0;
+
+    // --- Revenue & Session Growth ---
+    const recentBookingsQuery = query(collection(db, BOOKINGS_COLLECTION), where('createdAt', '>=', Timestamp.fromDate(thirtyDaysAgo)), where('status', '==', 'completed'));
+    const prevBookingsQuery = query(collection(db, BOOKINGS_COLLECTION), where('createdAt', '>=', Timestamp.fromDate(sixtyDaysAgo)), where('createdAt', '<', Timestamp.fromDate(thirtyDaysAgo)), where('status', '==', 'completed'));
+
+    const recentBookingsSnap = await getDocs(recentBookingsQuery);
+    const prevBookingsSnap = await getDocs(prevBookingsQuery);
+
+    let recentRevenue = 0;
+    recentBookingsSnap.forEach(doc => recentRevenue += doc.data().amount || 0);
+
+    let prevRevenue = 0;
+    prevBookingsSnap.forEach(doc => prevRevenue += doc.data().amount || 0);
+
+    const revenueGrowth = prevRevenue > 0 ? ((recentRevenue - prevRevenue) / prevRevenue) * 100 : recentRevenue > 0 ? 100 : 0;
+
+    // FIX: Added session growth calculation
+    const recentSessionsCount = recentBookingsSnap.size;
+    const prevSessionsCount = prevBookingsSnap.size;
+    const sessionGrowth = prevSessionsCount > 0 ? ((recentSessionsCount - prevSessionsCount) / prevSessionsCount) * 100 : recentSessionsCount > 0 ? 100 : 0;
+
+    const satisfactionRate = 96; // Placeholder
+
+    return {
+      metrics: {
+        userGrowth: Math.round(userGrowth),
+        professionalGrowth: Math.round(professionalGrowth),
+        revenueGrowth: Math.round(revenueGrowth),
+        sessionGrowth: Math.round(sessionGrowth),
+        satisfactionRate,
+      },
+      success: true,
+    };
+
+  } catch (error) {
+    console.error("Error getting platform metrics:", error);
+    return { error: error.message, success: false };
+  }
+};
+
+// NEW: Get the most recent users
+export const getRecentUsers = async (count = 5) => {
+  try {
+    const q = query(
+      collection(db, USERS_COLLECTION),
+      orderBy('createdAt', 'desc'),
+      limit(count)
+    );
+    const querySnapshot = await getDocs(q);
+    const users = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return { users, success: true };
+  } catch (error) {
+    console.error('Error getting recent users:', error);
+    return { error: error.message, success: false };
+  }
 };

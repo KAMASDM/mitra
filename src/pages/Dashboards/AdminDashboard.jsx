@@ -78,10 +78,12 @@ import {
   getSystemReports,
   updatePlatformSettings,
   getPlatformSettings,
+  getPlatformMetrics,
+  getRecentUsers
 } from '../../services/adminService';
 
 // Import the missing metrics function from userService
-import { getPlatformMetrics, getRecentUsers } from '../../services/userService';
+// import { getPlatformMetrics, getRecentUsers } from '../../services/userService';
 
 const MotionCard = motion(Card);
 
@@ -311,17 +313,17 @@ const AdminDashboard = () => {
       <Grid item size={{ xs: 12 }}>
         <Grid container spacing={3} sx={{ mb: 4 }}>
           {[
-            { label: 'Total Users', value: platformStats.totalUsers || 0, icon: <People />, color: '#9D84B7', change: metrics?.userGrowth ?? 0 },
-            { label: 'Professionals', value: platformStats.totalProfessionals || 0, icon: <Person />, color: '#F4A259', change: metrics?.professionalGrowth ?? 0 },
-            { label: 'Total Revenue', value: `₹${(platformStats.totalRevenue || 0).toLocaleString()}`, icon: <AttachMoney />, color: '#4DAA57', change: metrics?.revenueGrowth ?? 0 },
-            { label: 'Sessions', value: platformStats.totalSessions || 0, icon: <TrendingUp />, color: '#5899E2', change: metrics?.sessionGrowth ?? 0, isRate: true },
+            { label: 'Total Users', value: platformStats.totalUsers || 0, icon: <People />, color: '#5C4033', change: metrics?.userGrowth ?? 0 },
+            { label: 'Professionals', value: platformStats.totalProfessionals || 0, icon: <Person />, color: '#5C4033', change: metrics?.professionalGrowth ?? 0 },
+            { label: 'Total Revenue', value: `₹${(platformStats.totalRevenue || 0).toLocaleString()}`, icon: <AttachMoney />, color: '#5C4033', change: metrics?.revenueGrowth ?? 0 },
+            { label: 'Sessions', value: platformStats.totalSessions || 0, icon: <TrendingUp />, color: '#5C4033', change: metrics?.sessionGrowth ?? 0, isRate: true },
           ].map((stat, index) => (
             <Grid item key={index} size={{ xs: 12, sm: 6, md: 3 }}>
               <MotionCard
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                sx={{ p: 3, borderRadius: 3, border: `2px solid ${alpha(stat.color, 0.1)}`, '&:hover': { borderColor: stat.color, transform: 'translateY(-4px)', boxShadow: `0 10px 25px ${alpha(stat.color, 0.2)}` }, transition: 'all 0.3s ease' }}
+                sx={{ p: 3, borderRadius: 2, border: `2px solid ${alpha(stat.color, 0.1)}`, '&:hover': { borderColor: stat.color, transform: 'translateY(-4px)', boxShadow: `0 10px 25px ${alpha(stat.color, 0.2)}` }, transition: 'all 0.3s ease' }}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box>
@@ -434,7 +436,9 @@ const AdminDashboard = () => {
                           </Box>
                         </TableCell>
                         <TableCell>{prof.profession}</TableCell>
-                        <TableCell>{prof.years_of_experience || prof.experience} years</TableCell>
+                        <TableCell> {Number(prof.years_of_experience || prof.experience) > 0
+                            ? `${prof.years_of_experience || prof.experience} years`
+                            : 'No Experience'}</TableCell>
                         <TableCell>{prof.location}</TableCell>
                         <TableCell>{new Date(prof.submittedDate?.toDate?.() || prof.submittedDate).toLocaleDateString()}</TableCell>
                         <TableCell>
@@ -501,7 +505,9 @@ const AdminDashboard = () => {
                       <TableCell><Chip label={user.role} size="small" color="primary" /></TableCell>
                       <TableCell><Chip label={user.status || 'active'} size="small" color={user.status === 'active' ? 'success' : 'warning'} /></TableCell>
                       <TableCell>{new Date(user.createdAt?.toDate?.() || user.createdAt).toLocaleDateString()}</TableCell>
-                      <TableCell>{user.lastLoginAt ? new Date(user.lastLoginAt.toDate()).toLocaleDateString() : 'Never'}</TableCell>
+                      <TableCell> {user.lastLoginAt
+                        ? new Date(user.lastLoginAt).toLocaleDateString()
+                        : 'Never'}</TableCell>
                       <TableCell>
                         <Stack direction="row" spacing={1}>
                           <IconButton size="small" onClick={() => console.log('View user:', user.id)}><Visibility /></IconButton>

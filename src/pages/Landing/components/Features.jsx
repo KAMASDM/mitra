@@ -458,7 +458,7 @@ const FeaturesSection = () => {
           <Grid container spacing={4}>
             <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
               <Box sx={{ textAlign: 'center' }}>
-                <Language sx={{ fontSize: '3rem', color: 'primary.main', mb: 2 }} />
+                <Language sx={{ fontSize: '3rem', color: 'primary.dark', mb: 2 }} />
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
                   Multi-Language Support
                 </Typography>
@@ -470,7 +470,7 @@ const FeaturesSection = () => {
 
             <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
               <Box sx={{ textAlign: 'center' }}>
-                <AccessTime sx={{ fontSize: '3rem', color: 'secondary.main', mb: 2 }} />
+                <AccessTime sx={{ fontSize: '3rem', color: 'primary.dark', mb: 2 }} />
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
                   Instant Booking
                 </Typography>
@@ -482,7 +482,7 @@ const FeaturesSection = () => {
 
             <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
               <Box sx={{ textAlign: 'center' }}>
-                <Star sx={{ fontSize: '3rem', color: 'warning.main', mb: 2 }} />
+                <Star sx={{ fontSize: '3rem', color: 'primary.dark', mb: 2 }} />
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
                   Rating System
                 </Typography>
@@ -494,7 +494,7 @@ const FeaturesSection = () => {
 
             <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
               <Box sx={{ textAlign: 'center' }}>
-                <Support sx={{ fontSize: '3rem', color: 'success.main', mb: 2 }} />
+                <Support sx={{ fontSize: '3rem', color: 'primary.dark', mb: 2 }} />
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
                   Crisis Support
                 </Typography>
