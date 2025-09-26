@@ -60,25 +60,24 @@ export const getAllUsers = async (filters = {}) => {
     querySnapshot.forEach((doc) => {
       const userData = doc.data();
 
-      // --- FIX IS HERE ---
-
-      // 1. "Joined" date ke liye 'created_at' ka istemal karein
+     
+     
       const createdAtTimestamp = userData.created_at || userData.createdAt;
       const createdAtDate = createdAtTimestamp?.toDate ? createdAtTimestamp.toDate() : null;
 
-      // 2. "Last Login" date ke liye 'last_login_at' ka istemal karein
-      const lastLoginTimestamp = userData.last_login_at; // Yahan galti thi
+  
+      const lastLoginTimestamp = userData.last_login_at; 
       const lastLoginDate = lastLoginTimestamp?.toDate ? lastLoginTimestamp.toDate() : null;
 
       users.push({
         id: doc.id,
         ...userData,
-        createdAt: createdAtDate,   // Joined date ko assign karein
-        lastLoginAt: lastLoginDate, // Last Login date ko assign karein
+        createdAt: createdAtDate,   
+        lastLoginAt: lastLoginDate, 
       });
     });
 
-    // Client-side par data ko sort karein
+   
     users.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
     return { users, success: true };
@@ -758,6 +757,163 @@ export const getRecentUsers = async (count = 5) => {
     return { users, success: true };
   } catch (error) {
     console.error('Error getting recent users:', error);
+    return { error: error.message, success: false };
+  }
+};
+
+export const getAnalyticsDataForCharts = async (days = 30) => {
+  try {
+    const now = new Date();
+    const startDate = new Date();
+    startDate.setDate(now.getDate() - days);
+
+    // 1. Fetch completed bookings within the date range for revenue
+    const bookingsQuery = query(
+      collection(db, BOOKINGS_COLLECTION),
+      where('status', '==', 'completed'),
+      where('createdAt', '>=', Timestamp.fromDate(startDate))
+    );
+    const bookingsSnapshot = await getDocs(bookingsQuery);
+
+    // 2. Fetch new users within the date range
+    const usersQuery = query(
+      collection(db, USERS_COLLECTION),
+      where('createdAt', '>=', Timestamp.fromDate(startDate))
+    );
+    const usersSnapshot = await getDocs(usersQuery);
+
+    // 3. Process the data into daily aggregates
+    const dailyData = {};
+
+    // Initialize daily data object for the last 'days'
+    for (let i = 0; i < days; i++) {
+      const date = new Date();
+      date.setDate(now.getDate() - i);
+      const formattedDate = date.toISOString().split('T')[0]; // YYYY-MM-DD
+      dailyData[formattedDate] = {
+        revenue: 0,
+        newUsers: 0,
+      };
+    }
+
+    // Aggregate revenue from bookings
+    bookingsSnapshot.forEach(doc => {
+      const booking = doc.data();
+      const bookingDate = (booking.createdAt?.toDate ? booking.createdAt.toDate() : new Date(booking.createdAt)).toISOString().split('T')[0];
+      if (dailyData[bookingDate]) {
+        dailyData[bookingDate].revenue += booking.amount || 0;
+      }
+    });
+
+    // Aggregate new users
+    usersSnapshot.forEach(doc => {
+      const user = doc.data();
+      const userDate = (user.createdAt?.toDate ? user.createdAt.toDate() : new Date(user.createdAt)).toISOString().split('T')[0];
+      if (dailyData[userDate]) {
+        dailyData[userDate].newUsers += 1;
+      }
+    });
+
+    // 4. Format the data for the Recharts library
+    const chartData = Object.keys(dailyData)
+      .map(date => ({
+        // Format date for display on the chart axis (e.g., "Sep 26")
+        date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        revenue: dailyData[date].revenue,
+        newUsers: dailyData[date].newUsers,
+      }))
+      .sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort by date ascending
+
+    return {
+      success: true,
+      chartData: {
+        revenue: chartData.map(d => ({ date: d.date, revenue: d.revenue })),
+        users: chartData.map(d => ({ date: d.date, newUsers: d.newUsers })),
+      }
+    };
+
+  } catch (error) {
+    console.error("Error fetching analytics chart data:", error);
+    return { error: error.message, success: false };
+  }
+};
+
+export const getAllProfessionalsWithUserDetails = async () => {
+  try {
+    const professionalsQuery = query(collection(db, PROFESSIONALS_COLLECTION));
+    const professionalsSnapshot = await getDocs(professionalsQuery);
+
+    if (professionalsSnapshot.empty) {
+      return { professionals: [], success: true };
+    }
+
+    const mergedDataPromises = professionalsSnapshot.docs.map(async (profDoc) => {
+      const profData = { ...profDoc.data(), id: profDoc.id };
+      
+      if (profData.user_id) {
+        const userRef = doc(db, USERS_COLLECTION, profData.user_id);
+        const userSnap = await getDoc(userRef);
+        
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          return {
+            ...userData, // User details (name, email)
+            ...profData, // Professional details (status, experience)
+            // Standardize the status field for filtering
+            professionalStatus: profData.verification_status?.toLowerCase() || 'pending',
+          };
+        }
+      }
+      // Fallback if user is not found, but professional document exists
+      return { 
+        ...profData, 
+        displayName: 'User data not found',
+        email: 'N/A',
+        professionalStatus: profData.verification_status?.toLowerCase() || 'pending',
+      };
+    });
+
+    const professionals = await Promise.all(mergedDataPromises);
+    return { professionals, success: true };
+
+  } catch (error) {
+    console.error('Error getting all professionals with user details:', error);
+    return { error: error.message, success: false };
+  }
+};
+
+export const updateProfessionalDetails = async (professionalId, userId, data) => {
+  try {
+    const batch = writeBatch(db);
+   
+    const professionalRef = doc(db, PROFESSIONALS_COLLECTION, professionalId);
+    const professionalUpdatePayload = {
+      
+      first_name: data.first_name ?? '',
+      last_name: data.last_name ?? '',
+      profession: data.profession ?? null, 
+      years_of_experience: data.years_of_experience ?? 0,
+      location: data.location ?? null,
+    };
+    batch.update(professionalRef, professionalUpdatePayload);
+
+    if (userId) {
+      const userRef = doc(db, USERS_COLLECTION, userId);
+      const userUpdatePayload = {
+        displayName: data.displayName ?? '',
+        email: data.email ?? '', 
+      };
+
+      if (Object.keys(userUpdatePayload).length > 0) {
+        batch.update(userRef, userUpdatePayload);
+      }
+    }
+
+    await batch.commit();
+    return { success: true };
+
+  } catch (error) {
+    console.error("Error updating professional details:", error);
     return { error: error.message, success: false };
   }
 };

@@ -37,6 +37,7 @@ import {
   Snackbar,
   TablePagination,
   Divider,
+  InputAdornment,
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import {
@@ -52,7 +53,9 @@ import {
   Settings,
   Block,
   Delete,
-  Download, // Added Delete icon
+  Download,
+  Search,
+  Edit, // Added Delete icon
 } from '@mui/icons-material';
 
 import {
@@ -73,7 +76,6 @@ import {
   getAllUsers,
   updateUserStatus,
   deleteUser,
-  getPendingProfessionals,
   approveProfessional,
   rejectProfessional,
   getPlatformStatistics,
@@ -82,7 +84,10 @@ import {
   getPlatformSettings,
   getPlatformMetrics,
   getRecentUsers,
-  getProfessionalTypes
+  getProfessionalTypes,
+  getAnalyticsDataForCharts,
+  getAllProfessionalsWithUserDetails,
+  updateProfessionalDetails
 } from '../../services/adminService';
 
 // Import the missing metrics function from userService
@@ -114,6 +119,62 @@ const timeSince = (date) => {
   return 'just now';
 };
 
+const EditProfessionalDialog = ({ professional, open, onClose, onSave }) => {
+  const [editData, setEditData] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (professional) {
+      const name = `${professional.first_name || ''} ${professional.last_name || ''}`.trim() || professional.displayName || '';
+      setEditData({ ...professional, displayName: name });
+    }
+  }, [professional]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setEditData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSaveChanges = async () => {
+    setSaving(true);
+    await onSave(editData);
+    setSaving(false);
+  };
+
+  if (!open || !editData) return null;
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle sx={{ fontWeight: 700 }}>Edit Professional Details</DialogTitle>
+      <DialogContent>
+        <Grid container spacing={3} sx={{ mt: 1 }}>
+          <Grid item xs={12} sm={6}>
+            <TextField fullWidth name="displayName" label="Full Name" value={editData.displayName || ''} onChange={handleChange} />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField fullWidth name="email" label="Email Address" value={editData.email || ''} onChange={handleChange} />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField fullWidth name="profession" label="Profession" value={editData.profession || ''} onChange={handleChange} />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField fullWidth name="years_of_experience" label="Years of Experience" type="number" value={editData.years_of_experience || 0} onChange={handleChange} />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField fullWidth name="location" label="Location" value={editData.location || ''} onChange={handleChange} />
+          </Grid>
+        </Grid>
+      </DialogContent>
+      <DialogActions sx={{ p: 2 }}>
+        <Button onClick={onClose} disabled={saving}>Cancel</Button>
+        <Button variant="contained" color="primary" onClick={handleSaveChanges} disabled={saving}>
+          {saving ? 'Saving...' : 'Save Changes'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
 const AdminDashboard = () => {
   const theme = useTheme();
   const user = JSON.parse(localStorage.getItem('loginInfo'));
@@ -121,10 +182,11 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [error, setError] = useState('');
-
-  // State for different sections
+  const [userSearchTerm, setUserSearchTerm] = useState('');
+  const [professionalSearchTerm, setProfessionalSearchTerm] = useState('');
   const [platformStats, setPlatformStats] = useState({});
-  const [pendingProfessionals, setPendingProfessionals] = useState([]);
+  const [allProfessionals, setAllProfessionals] = useState([]);
+  const [professionalStatusFilter, setProfessionalStatusFilter] = useState('ALL');
   const [allUsers, setAllUsers] = useState([]);
   const [reports, setReports] = useState({});
   const [settings, setSettings] = useState({});
@@ -134,16 +196,11 @@ const AdminDashboard = () => {
   const [professionalTypes, setProfessionalTypes] = useState([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  // Dialog states
   const [selectedUser, setSelectedUser] = useState(null);
   const [userDetailsDialogOpen, setUserDetailsDialogOpen] = useState(false);
-
-  // --- FIX: State for Professional Details Dialog ---
   const [selectedProfessional, setSelectedProfessional] = useState(null);
   const [professionalDetailsDialogOpen, setProfessionalDetailsDialogOpen] = useState(false);
-
-
-
+  const [editProfessionalDialogOpen, setEditProfessionalDialogOpen] = useState(false);
   // Dialog states
   const [actionDialog, setActionDialog] = useState({
     open: false,
@@ -151,13 +208,13 @@ const AdminDashboard = () => {
     data: null,
   });
 
-  const professionalTypeMap = useMemo(() => {
-    if (!professionalTypes) return {};
-    return professionalTypes.reduce((acc, type) => {
-      acc[type.id] = type.title;
-      return acc;
-    }, {});
-  }, [professionalTypes]);
+  // const professionalTypeMap = useMemo(() => {
+  //   if (!professionalTypes) return {};
+  //   return professionalTypes.reduce((acc, type) => {
+  //     acc[type.id] = type.title;
+  //     return acc;
+  //   }, {});
+  // }, [professionalTypes]);
 
   useEffect(() => {
     fetchInitialData();
@@ -167,34 +224,28 @@ const AdminDashboard = () => {
   const fetchInitialData = async () => {
     setLoading(true);
     try {
-      // Corrected the Promise.all call to use the right function and handle the response
-      const [statsRes, professionalsRes, usersRes, settingsRes, metricsRes, activityRes, typesRes] = await Promise.all([
+      const [statsRes, professionalsRes, usersRes, settingsRes, metricsRes, activityRes, chartRes, typesRes] = await Promise.all([
         getPlatformStatistics(),
-        getPendingProfessionals(),
+        getAllProfessionalsWithUserDetails(),
         getAllUsers(),
         getPlatformSettings(),
-        getPlatformMetrics(), // Changed from getSystemMetrics to getPlatformMetrics
-        getRecentUsers(3), // Fetch recent users for activity feed
-        getProfessionalTypes
+        getPlatformMetrics(),
+        getRecentUsers(3),
+        getAnalyticsDataForCharts(30),
+        getProfessionalTypes(),
       ]);
 
       if (statsRes.success) setPlatformStats(statsRes.statistics);
-      if (statsRes.success) generateChartData(statsRes.statistics);
-      if (professionalsRes.success) setPendingProfessionals(professionalsRes.professionals);
+      if (professionalsRes.success) setAllProfessionals(professionalsRes.professionals);
       if (usersRes.success) setAllUsers(usersRes.users);
       if (settingsRes.success) setSettings(settingsRes.settings);
       if (metricsRes.success) setMetrics(metricsRes.metrics);
       if (typesRes.success) setProfessionalTypes(typesRes.types);
-      if (activityRes.success) {
-        // Add a type to each activity for styling/icon purposes
-        const formattedActivity = activityRes.users.map(u => ({
-          ...u,
-          type: u.role === 'PROFESSIONAL' ? 'New Professional' : 'New Client',
-          timestamp: u.createdAt?.toDate ? u.createdAt.toDate() : new Date(),
-        }));
-        setRecentActivity(formattedActivity);
-      }
+      if (chartRes.success) setChartData(chartRes.chartData);
 
+      if (activityRes.success) {
+        setRecentActivity(activityRes.users.map(u => ({ ...u, type: u.role === 'PROFESSIONAL' ? 'New Professional' : 'New Client', timestamp: u.createdAt?.toDate ? u.createdAt.toDate() : new Date() })));
+      }
     } catch (error) {
       console.error("Failed to load dashboard data:", error);
       showSnackbar('Failed to load dashboard data', 'error');
@@ -203,16 +254,18 @@ const AdminDashboard = () => {
     }
   };
 
-  const showSnackbar = (message, severity = 'success') => {
-    setSnackbar({ open: true, message, severity });
-  };
-
+  const showSnackbar = (message, severity = 'success') => setSnackbar({ open: true, message, severity });
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
-    if (newValue === 3 && Object.keys(reports).length === 0) {
-      fetchReports();
-    }
+    setPage(0);
   };
+
+  // const handleTabChange = (event, newValue) => {
+  //   setTabValue(newValue);
+  //   if (newValue === 3 && Object.keys(reports).length === 0) {
+  //     fetchReports();
+  //   }
+  // };
 
   const fetchReports = async () => {
     try {
@@ -312,35 +365,46 @@ const AdminDashboard = () => {
     }
   };
 
-  const generateChartData = (stats) => {
-    // Generate sample data for the last 30 days
-    const revenueData = [];
-    const userData = [];
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const shortDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const filteredUsers = useMemo(() => {
+    if (!userSearchTerm) return allUsers;
+    const lowercasedFilter = userSearchTerm.toLowerCase();
+    return allUsers.filter(user =>
+      (`${user.first_name || ''} ${user.last_name || ''}`.trim().toLowerCase().includes(lowercasedFilter)) ||
+      (user.displayName?.toLowerCase().includes(lowercasedFilter)) ||
+      (user.email?.toLowerCase().includes(lowercasedFilter))
+    );
+  }, [userSearchTerm, allUsers]);
 
-      revenueData.push({
-        date: shortDate,
-        revenue: Math.floor(Math.random() * 3000) + 1000,
-      });
+  const professionalCounts = useMemo(() => {
+    return {
+      PENDING: allProfessionals.filter(p => p.professionalStatus === 'pending').length,
+      VERIFIED: allProfessionals.filter(p => p.professionalStatus === 'verified').length,
+      REJECTED: allProfessionals.filter(p => p.professionalStatus === 'rejected').length,
+    };
+  }, [allProfessionals]);
 
-      userData.push({
-        date: shortDate,
-        newUsers: Math.floor(Math.random() * 15) + 5,
+  const filteredProfessionals = useMemo(() => {
+    let professionals = allProfessionals;
+    if (professionalStatusFilter !== 'ALL') {
+      professionals = professionals.filter(p => p.professionalStatus === professionalStatusFilter.toLowerCase());
+    }
+    if (professionalSearchTerm) {
+      const lowercasedFilter = professionalSearchTerm.toLowerCase();
+      professionals = professionals.filter(p => {
+        const name = `${p.firstName || ''} ${p.lastName || ''}`.trim() || p.displayName || '';
+        return name.toLowerCase().includes(lowercasedFilter) || p.email?.toLowerCase().includes(lowercasedFilter);
       });
     }
-    setChartData({ revenue: revenueData, users: userData });
-  };
+    return professionals;
+  }, [professionalSearchTerm, professionalStatusFilter, allProfessionals]);
+
   const handleViewUser = (user) => {
     setSelectedUser(user);
     setUserDetailsDialogOpen(true);
   };
+
   const UserDetailsDialog = ({ user, open, onClose }) => {
     if (!user) return null;
-    
-
     return (
       <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: 700, pb: 2 }}>User Details</DialogTitle>
@@ -404,7 +468,7 @@ const AdminDashboard = () => {
     setProfessionalDetailsDialogOpen(true);
   };
 
-    const ProfessionalDetailsDialog = ({ professional, open, onClose }) => {
+  const ProfessionalDetailsDialog = ({ professional, open, onClose }) => {
     if (!professional) return null;
 
     return (
@@ -420,37 +484,37 @@ const AdminDashboard = () => {
                 {(professional.displayName || 'P')?.charAt(0).toUpperCase()}
               </Avatar>
               <Typography variant="h6">{professional.displayName || 'No name'}</Typography>
-              <Chip 
-                label={professional.profession} 
-                color="secondary" 
-                size="small" 
+              <Chip
+                label={professional.profession}
+                color="secondary"
+                size="small"
                 sx={{ mt: 1 }}
               />
             </Grid>
-            
+
             <Grid item xs={12} md={8}>
-                <Stack spacing={2}>
-                    <Box>
-                        <Typography variant="caption" color="text.secondary">Email Address</Typography>
-                        <Typography variant="body1">{professional.email}</Typography>
-                    </Box>
-                    <Grid container spacing={2}>
-                      <Grid item xs={6}>
-                        <Typography variant="caption" color="text.secondary">Experience</Typography>
-                        <Typography variant="body1">{professional.years_of_experience || professional.experience} years</Typography>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Typography variant="caption" color="text.secondary">Location</Typography>
-                        <Typography variant="body1">{professional.location || 'N/A'}</Typography>
-                      </Grid>
-                    </Grid>
-                    <Box>
-                        <Typography variant="caption" color="text.secondary">Submitted On</Typography>
-                        <Typography variant="body1">
-                            {new Date(professional.submittedDate?.toDate?.() || professional.submittedDate).toLocaleString()}
-                        </Typography>
-                    </Box>
-                </Stack>
+              <Stack spacing={2}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Email Address</Typography>
+                  <Typography variant="body1">{professional.email}</Typography>
+                </Box>
+                <Grid container spacing={2}>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="text.secondary">Experience</Typography>
+                    <Typography variant="body1">{professional.years_of_experience || professional.experience} years</Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="text.secondary">Location</Typography>
+                    <Typography variant="body1">{professional.location || 'N/A'}</Typography>
+                  </Grid>
+                </Grid>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Submitted On</Typography>
+                  <Typography variant="body1">
+                    {new Date(professional.submittedDate?.toDate?.() || professional.submittedDate).toLocaleString()}
+                  </Typography>
+                </Box>
+              </Stack>
             </Grid>
 
             <Grid item xs={12}>
@@ -459,10 +523,10 @@ const AdminDashboard = () => {
               <Stack direction="row" spacing={1} flexWrap="wrap">
                 {professional.documents && professional.documents.length > 0 ? (
                   professional.documents.map((doc, index) => (
-                    <Chip 
-                      key={index} 
-                      icon={<FilePresent />} 
-                      label={doc} 
+                    <Chip
+                      key={index}
+                      icon={<FilePresent />}
+                      label={doc}
                       variant="outlined"
                       color="success"
                       onClick={() => alert(`Viewing document: ${doc}`)} // Placeholder action
@@ -478,8 +542,8 @@ const AdminDashboard = () => {
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={onClose}>Close</Button>
-          <Button 
-            color="error" 
+          <Button
+            color="error"
             onClick={() => {
               handleRejectProfessional(professional.id);
               onClose();
@@ -487,8 +551,8 @@ const AdminDashboard = () => {
           >
             Reject
           </Button>
-          <Button 
-            variant="contained" 
+          <Button
+            variant="contained"
             color="success"
             onClick={() => {
               handleApproveProfessional(professional.id);
@@ -501,6 +565,32 @@ const AdminDashboard = () => {
       </Dialog>
     );
   };
+
+  const handleEditProfessional = (professional) => {
+    setSelectedProfessional(professional);
+    setEditProfessionalDialogOpen(true);
+  };
+
+
+  const handleSaveChanges = async (updatedData) => {
+    const payload = { ...updatedData };
+    if (payload.displayName) {
+      const nameParts = payload.displayName.split(' ');
+      payload.first_name = nameParts[0] || '';
+      payload.last_name = nameParts.slice(1).join(' ') || '';
+    }
+
+    const result = await updateProfessionalDetails(payload.id, payload.user_id, payload);
+
+    if (result.success) {
+      setAllProfessionals(prev => prev.map(p => (p.id === payload.id ? { ...p, ...payload } : p)));
+      setEditProfessionalDialogOpen(false);
+      showSnackbar('Professional details updated successfully!');
+    } else {
+      showSnackbar(result.error || 'Failed to update details.', 'error');
+    }
+  };
+
 
   const renderOverview = () => (
     <Grid container spacing={4}>
@@ -595,14 +685,27 @@ const AdminDashboard = () => {
     </Grid>
   );
 
+
   const renderProfessionalApprovals = () => (
     <Grid container spacing={4}>
       <Grid item xs={12}>
-        <MotionCard initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} sx={{ borderRadius: 3 }}>
+        <MotionCard initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} sx={{ borderRadius: 3 }}>
           <CardContent sx={{ p: 4, minWidth: '95vw' }}>
-            <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
-              Pending Professional Approvals ({pendingProfessionals.length})
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>Professional Management</Typography>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <TextField size="small" variant="outlined" placeholder="Search..." value={professionalSearchTerm} onChange={(e) => setProfessionalSearchTerm(e.target.value)} InputProps={{ startAdornment: (<InputAdornment position="start"><Search /></InputAdornment>), }} sx={{ minWidth: '300px' }} />
+                <FormControl size="small" sx={{ minWidth: 180 }}>
+                  <InputLabel>Status</InputLabel>
+                  <Select value={professionalStatusFilter} label="Status" onChange={(e) => setProfessionalStatusFilter(e.target.value)}>
+                    <MenuItem value="ALL">All Professionals</MenuItem>
+                    <MenuItem value="PENDING">Pending ({professionalCounts.PENDING})</MenuItem>
+                    <MenuItem value="VERIFIED">Verified ({professionalCounts.VERIFIED})</MenuItem>
+                    <MenuItem value="REJECTED">Rejected ({professionalCounts.REJECTED})</MenuItem>
+                  </Select>
+                </FormControl>
+              </Stack>
+            </Box>
             <TableContainer>
               <Table>
                 <TableHead>
@@ -613,62 +716,55 @@ const AdminDashboard = () => {
                     <TableCell>Location</TableCell>
                     <TableCell>Submitted On</TableCell>
                     <TableCell>Documents</TableCell>
+                    <TableCell>Status</TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {pendingProfessionals.length > 0 ? (
-                    pendingProfessionals.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((prof) => (
-                      <TableRow key={prof.id}>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <Avatar sx={{ bgcolor: 'primary.main' }}>{prof.displayName?.charAt(0)}</Avatar>
-                            <Box>
-                              <Typography variant="body1" sx={{ fontWeight: 600 }}>{prof.displayName}</Typography>
-                              <Typography variant="body2" sx={{ color: 'text.secondary' }}>{prof.email}</Typography>
+                  {filteredProfessionals.length > 0 ? (
+                    filteredProfessionals.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((prof) => {
+                      const name = `${prof.first_name || ''} ${prof.last_name || ''}`.trim() || prof.displayName || 'Unnamed Professional';
+                      return (
+                        <TableRow key={prof.id}>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                              <Avatar sx={{ bgcolor: 'primary.main' }}>{name.charAt(0)}</Avatar>
+                              <Box>
+                                <Typography variant="body1" sx={{ fontWeight: 600 }}>{name}</Typography>
+                                <Typography variant="body2" color="text.secondary">{prof.email}</Typography>
+                              </Box>
                             </Box>
-                          </Box>
-                        </TableCell>
-                        <TableCell>{prof.profession}</TableCell>
-                        <TableCell> {Number(prof.years_of_experience || prof.experience) > 0
-                          ? `${prof.years_of_experience || prof.experience} years`
-                          : 'No Experience'}</TableCell>
-                        <TableCell>{prof.location}</TableCell>
-                        <TableCell>{new Date(prof.submittedDate?.toDate?.() || prof.submittedDate).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <Stack direction="row" spacing={1} flexWrap="wrap">
-                            {prof.documents?.map((doc, index) => (
-                              <Chip key={index} label={doc} size="small" color="success" variant="outlined" />
-                            ))}
-                          </Stack>
-                        </TableCell>
-                        <TableCell>
-                          <Stack direction="row" spacing={1}>
-                            <IconButton size="small" color="primary" onClick={() => handleViewProfessional(prof)}><Visibility /></IconButton>
-                            <IconButton size="small" color="success" onClick={() => handleApproveProfessional(prof.id)}><CheckCircle /></IconButton>
-                            <IconButton size="small" color="error" onClick={() => handleRejectProfessional(prof.id)}><Cancel /></IconButton>
-                          </Stack>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                          </TableCell>
+                          <TableCell>{prof.profession || 'N/A'}</TableCell>
+                          <TableCell>{prof.years_of_experience || 'N/A'} years</TableCell>
+                          <TableCell>{prof.location || 'N/A'}</TableCell>
+                          <TableCell>{new Date(prof.createdAt?.toDate() || prof.createdAt).toLocaleDateString()}</TableCell>
+                          <TableCell>{prof.documents?.length || 0} files</TableCell>
+                          <TableCell>
+                            <Chip label={prof.professionalStatus} size="small" color={prof.professionalStatus === 'verified' ? 'success' : prof.professionalStatus === 'rejected' ? 'error' : 'warning'} />
+                          </TableCell>
+                          <TableCell>
+                            <Stack direction="row" spacing={0}>
+                              <IconButton size="small" color="primary"><Visibility /></IconButton>
+                              <IconButton size="small" color="secondary" onClick={() => handleEditProfessional(prof)}><Edit /></IconButton>
+                              {prof.professionalStatus === 'pending' && (
+                                <>
+                                  <IconButton size="small" color="success"><CheckCircle /></IconButton>
+                                  <IconButton size="small" color="error"><Cancel /></IconButton>
+                                </>
+                              )}
+                            </Stack>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   ) : (
-                    <TableRow><TableCell colSpan={7} align="center">No pending approvals</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={8} align="center">No professionals match.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
             </TableContainer>
-            <TablePagination
-              rowsPerPageOptions={[10, 25, 50]}
-              component="div"
-              count={pendingProfessionals.length}
-              rowsPerPage={rowsPerPage}
-              page={page}
-              onPageChange={(event, newPage) => setPage(newPage)}
-              onRowsPerPageChange={(event) => {
-                setRowsPerPage(parseInt(event.target.value, 10));
-                setPage(0);
-              }}
-            />
+            <TablePagination rowsPerPageOptions={[10, 25, 50]} component="div" count={filteredProfessionals.length} rowsPerPage={rowsPerPage} page={page} onPageChange={(e, newPage) => setPage(newPage)} onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }} />
           </CardContent>
         </MotionCard>
       </Grid>
@@ -681,9 +777,28 @@ const AdminDashboard = () => {
       <Grid item xs={12}>
         <MotionCard initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} sx={{ borderRadius: 3 }}>
           <CardContent sx={{ p: 4, minWidth: '95vw' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-              <Typography variant="h5" sx={{ fontWeight: 700 }}>User Management ({allUsers.length})</Typography>
-              <Button variant="outlined" startIcon={<Download />}>Export Users</Button>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>User Management</Typography>
+
+              <Box sx={{ gap: 2, display:'flex'}}>
+                <TextField
+                  size="small"
+                  variant="outlined"
+                  placeholder="Search..."
+                  value={userSearchTerm}
+                  onChange={(e) => setUserSearchTerm(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Search />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{ maxWidth: '300px', flexGrow: 1 }}
+                />
+                <Button variant="outlined" startIcon={<Download />}>Export Users</Button>
+              </Box>
+
             </Box>
             <TableContainer>
               <Table>
@@ -698,53 +813,44 @@ const AdminDashboard = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {allUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <Avatar src={user.photoURL} sx={{ bgcolor: 'primary.main' }}>
-                            {/* FIX: Your existing code for name fallback is already good! */}
-                            {(user.displayName || user.email || 'U')?.charAt(0).toUpperCase()}
-                          </Avatar>
-                          <Box>
-                            <Typography variant="body1" sx={{ fontWeight: 600 }}>{user.displayName || 'No name'}</Typography>
-                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>{user.email}</Typography>
+                  {/* --- UPDATE: Use filteredUsers here --- */}
+                  {filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((user) => {
+                    const professionalName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.displayName || 'Unnamed Professional';
+                    return (
+                      <TableRow key={user.id}>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Avatar src={user.photoURL} sx={{ bgcolor: 'primary.main' }}>{professionalName.charAt(0)}</Avatar>
+                            <Box>
+                              <Typography variant="body1" sx={{ fontWeight: 600 }}>{professionalName}</Typography>
+                              <Typography variant="body2" sx={{ color: 'text.secondary' }}>{user.email}</Typography>
+                            </Box>
                           </Box>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        {/* FIX: Add a fallback for the role to prevent a blank chip */}
-                        <Chip label={user.role || 'Client'} size="small" color="primary" />
-                      </TableCell>
-                      <TableCell>
-                        <Chip label={user.status || 'active'} size="small" color={user.status === 'active' ? 'success' : 'warning'} />
-                      </TableCell>
-                      <TableCell>
-                        {user.createdAt
-                          ? new Date(user.createdAt).toLocaleDateString()
-                          : 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        {user.lastLoginAt
+                        </TableCell>
+                        <TableCell> <Chip label={user.role || 'Client'} size="small" color="primary" /></TableCell>
+                        <TableCell><Chip label={user.status || 'active'} size="small" color={user.status === 'active' ? 'success' : 'warning'} /></TableCell>
+                        <TableCell>{new Date(user.createdAt?.toDate?.() || user.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell> {user.lastLoginAt
                           ? new Date(user.lastLoginAt).toLocaleDateString()
-                          : 'Never'}
-                      </TableCell>
-                      <TableCell>
-                        <Stack direction="row" spacing={1}>
-                          <IconButton size="small" onClick={() => handleViewUser(user)}><Visibility /></IconButton>
-                          <IconButton size="small" color={user.status === 'active' ? 'warning' : 'success'} onClick={() => handleUserStatusChange(user.id, user.status === 'active' ? 'suspended' : 'active')}><Block /></IconButton>
-                          <IconButton size="small" color="error" onClick={() => handleDeleteUser(user.id)}><Delete /></IconButton>
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                          : 'Never'}</TableCell>
+                        <TableCell>
+                          <Stack direction="row" spacing={1}>
+                            <IconButton size="small" onClick={() => handleViewUser(user)}><Visibility /></IconButton>
+                            <IconButton size="small" color={user.status === 'active' ? 'warning' : 'success'} onClick={() => handleUserStatusChange(user.id, user.status === 'active' ? 'suspended' : 'active')}><Block /></IconButton>
+                            <IconButton size="small" color="error" onClick={() => handleDeleteUser(user.id)}><Delete /></IconButton>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </TableContainer>
+            {/* --- UPDATE: Use filteredUsers.length for the count --- */}
             <TablePagination
               rowsPerPageOptions={[10, 25, 50]}
               component="div"
-              count={allUsers.length}
+              count={filteredUsers.length}
               rowsPerPage={rowsPerPage}
               page={page}
               onPageChange={(event, newPage) => setPage(newPage)}
@@ -926,8 +1032,8 @@ const AdminDashboard = () => {
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 4, minWidth: "95vw" }}>
           <Tabs value={tabValue} onChange={handleTabChange}>
             <Tab label="Overview" />
-            <Tab label={`Professional Approvals (${pendingProfessionals.length})`} />
-            <Tab label="User Management" />
+            <Tab label={`Professional Approvals (${filteredProfessionals.length})`} />
+            <Tab label={`User Management (${filteredUsers.length})`} />
             <Tab label="Reports" />
             <Tab label="Settings" />
           </Tabs>
@@ -945,10 +1051,17 @@ const AdminDashboard = () => {
           onClose={() => setUserDetailsDialogOpen(false)}
         />
 
-         <ProfessionalDetailsDialog
+        <ProfessionalDetailsDialog
           professional={selectedProfessional}
           open={professionalDetailsDialogOpen}
           onClose={() => setProfessionalDetailsDialogOpen(false)}
+        />
+
+        <EditProfessionalDialog
+          professional={selectedProfessional}
+          open={editProfessionalDialogOpen}
+          onClose={() => setEditProfessionalDialogOpen(false)}
+          onSave={handleSaveChanges}
         />
 
         <Dialog open={actionDialog.open} onClose={() => setActionDialog({ open: false, type: null, data: null })}>
