@@ -9,11 +9,11 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import { 
-  Home, 
-  Psychology, 
-  AccountCircle, 
-  Login, 
+import {
+  Home,
+  Psychology,
+  AccountCircle,
+  Login,
   Logout,
   Dashboard,
   AdminPanelSettings,
@@ -24,7 +24,7 @@ const MobileBottomNav = () => {
   const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   const [value, setValue] = useState("/");
   const user = JSON.parse(localStorage.getItem("loginInfo"));
 
@@ -63,6 +63,44 @@ const MobileBottomNav = () => {
   };
 
   if (!isMobile) return null;
+
+  const renderLoggedInActions = () => {
+    return [
+      <BottomNavigationAction
+        key="dashboard"
+        label="Dashboard"
+        value="dashboard"
+        icon={
+          user.user_type === "ADMIN" || user.user_type === "SUPERADMIN" ?
+          <AdminPanelSettings /> :
+          <Dashboard />
+        }
+        sx={{ minWidth: 'auto' }}
+      />,
+      <BottomNavigationAction
+        key="profile"
+        label={
+          user.user_type === "ADMIN" || user.user_type === "SUPERADMIN" ?
+          "Admin" :
+          "Profile"
+        }
+        value="profile"
+        icon={
+          user.user_type === "ADMIN" || user.user_type === "SUPERADMIN" ?
+          <AdminPanelSettings /> :
+          <AccountCircle />
+        }
+        sx={{ minWidth: 'auto' }}
+      />,
+      <BottomNavigationAction
+        key="logout"
+        label="Logout"
+        value="auth"
+        icon={<Logout />}
+        sx={{ minWidth: 'auto' }}
+      />
+    ];
+  };
 
   return (
     <Box
@@ -116,10 +154,10 @@ const MobileBottomNav = () => {
             },
           }}
         >
-          <BottomNavigationAction 
-            label="Home" 
-            value="/" 
-            icon={<Home />} 
+          <BottomNavigationAction
+            label="Home"
+            value="/"
+            icon={<Home />}
             sx={{ minWidth: 'auto' }}
           />
           <BottomNavigationAction
@@ -129,40 +167,7 @@ const MobileBottomNav = () => {
             sx={{ minWidth: 'auto' }}
           />
           
-          {user?.user ? (
-            <>
-              <BottomNavigationAction
-                label="Dashboard"
-                value="dashboard"
-                icon={
-                  user.user_type === "ADMIN" || user.user_type === "SUPERADMIN" ? 
-                  <AdminPanelSettings /> : 
-                  <Dashboard />
-                }
-                sx={{ minWidth: 'auto' }}
-              />
-              <BottomNavigationAction
-                label={
-                  user.user_type === "ADMIN" || user.user_type === "SUPERADMIN" ? 
-                  "Admin" : 
-                  "Profile"
-                }
-                value="profile"
-                icon={
-                  user.user_type === "ADMIN" || user.user_type === "SUPERADMIN" ? 
-                  <AdminPanelSettings /> : 
-                  <AccountCircle />
-                }
-                sx={{ minWidth: 'auto' }}
-              />
-              <BottomNavigationAction
-                label="Logout"
-                value="auth"
-                icon={<Logout />}
-                sx={{ minWidth: 'auto' }}
-              />
-            </>
-          ) : (
+          {user?.user ? renderLoggedInActions() : (
             <BottomNavigationAction
               label="Login"
               value="auth"

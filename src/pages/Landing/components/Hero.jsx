@@ -61,6 +61,7 @@ const Hero = () => {
                   fontWeight: 800,
                   color: 'text.primary',
                   mb: 3,
+                  fontSize: { xs: '2.2rem', sm: '2.8rem', md: '3rem' },
                 }}
               >
                 Safe & Inclusive{" "}
@@ -78,6 +79,7 @@ const Hero = () => {
                   mb: 4,
                   fontWeight: 400,
                   maxWidth: { md: '90%' },
+                  fontSize: { xs: '1rem', md: '1.25rem' }
                 }}
               >
                 Connect with verified professionals in a safe, judgment-free
@@ -106,7 +108,7 @@ const Hero = () => {
             </MotionBox>
           </Grid>
 
-          <Grid item xs={12} md={6} sx={{ my: 2 }}>
+          <Grid item xs={12} md={6}>
             <Grid container spacing={2}>
               {services.map((service, index) => (
                 <Grid item xs={6} key={service.id}>
@@ -116,8 +118,8 @@ const Hero = () => {
                     transition={{ duration: 0.6, delay: 0.4 + index * 0.1 }}
                     whileHover={{ scale: 1.05, y: -5 }}
                     sx={{
-                      p: 2,
-                      borderRadius: '20%',
+                      p: { xs: 2, sm: 3 },
+                      borderRadius: 4,
                       background: 'rgba(255, 255, 255, 0.8)',
                       backdropFilter: 'blur(10px)',
                       border: `1px solid ${alpha(service.color, 0.3)}`,
@@ -131,7 +133,7 @@ const Hero = () => {
                     onClick={() => navigate("/services")}
                   >
                     <Box sx={{ color: service.color, fontSize: '2.5rem', mb: 1 }}>{service.icon}</Box>
-                    <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary', fontSize: "1rem" }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary',  fontSize: { xs: '0.8rem', sm: '1rem' } }}>
                       {service.title}
                     </Typography>
                   </MotionBox>

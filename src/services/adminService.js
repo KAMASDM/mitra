@@ -20,6 +20,7 @@ import {
 import { db } from '../config/firebase';
 import { sendEmail } from './emailService'; // You'll need to create this
 import { generateReport } from '../utils/reportGenerator'; // You'll need to create this
+import { uploadProfilePicture } from './userService'; // Import the upload function
 
 // Collections
 const USERS_COLLECTION = 'users';
@@ -44,40 +45,99 @@ export const getProfessionalTypes = async () => {
 };
 
 // Get all users with pagination and filters
+// export const getAllUsers = async (filters = {}) => {
+//   try {
+//     let q = collection(db, USERS_COLLECTION);
+//     const queryConstraints = [];
+
+//     if (filters.role) {
+//       queryConstraints.push(where('role', '==', filters.role));
+//     }
+
+//     q = query(q, ...queryConstraints);
+//     const querySnapshot = await getDocs(q);
+
+//     const users = [];
+//     querySnapshot.forEach((doc) => {
+//       const userData = doc.data();
+
+
+
+//       const createdAtTimestamp = userData.created_at || userData.createdAt;
+//       const createdAtDate = createdAtTimestamp?.toDate ? createdAtTimestamp.toDate() : null;
+
+
+//       const lastLoginTimestamp = userData.last_login_at;
+//       const lastLoginDate = lastLoginTimestamp?.toDate ? lastLoginTimestamp.toDate() : null;
+
+//       users.push({
+//         id: doc.id,
+//         ...userData,
+//         createdAt: createdAtDate,
+//         lastLoginAt: lastLoginDate,
+//       });
+//     });
+
+
+//     users.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+//     return { users, success: true };
+//   } catch (error) {
+//     console.error('Error getting all users:', error);
+//     return { error: error.message, success: false };
+//   }
+// };
+
 export const getAllUsers = async (filters = {}) => {
   try {
-    let q = collection(db, USERS_COLLECTION);
+    const usersCollectionRef = collection(db, 'users');
     const queryConstraints = [];
 
     if (filters.role) {
       queryConstraints.push(where('role', '==', filters.role));
     }
 
-    q = query(q, ...queryConstraints);
-    const querySnapshot = await getDocs(q);
+    const q = query(usersCollectionRef, ...queryConstraints);
+    const usersSnapshot = await getDocs(q);
 
-    const users = [];
-    querySnapshot.forEach((doc) => {
-      const userData = doc.data();
+    const usersPromises = usersSnapshot.docs.map(async (userDoc) => {
+      const userData = { id: userDoc.id, ...userDoc.data() };
+      let profileData = {};
+      let profileSnapshot;
 
-     
-     
-      const createdAtTimestamp = userData.created_at || userData.createdAt;
-      const createdAtDate = createdAtTimestamp?.toDate ? createdAtTimestamp.toDate() : null;
 
-  
-      const lastLoginTimestamp = userData.last_login_at; 
+      if (userData.role === 'CLIENT') {
+        const clientQuery = query(collection(db, 'clients'), where('user_id', '==', userDoc.id), limit(1));
+        profileSnapshot = await getDocs(clientQuery);
+      } else if (userData.role === 'PROFESSIONAL') {
+        const profQuery = query(collection(db, 'professionals'), where('user_id', '==', userDoc.id), limit(1));
+        profileSnapshot = await getDocs(profQuery);
+      }
+
+      if (profileSnapshot && !profileSnapshot.empty) {
+        profileData = profileSnapshot.docs[0].data();
+      }
+
+
+      const createdAtTimestamp = userData.createdAt || userData.created_at;
+      const createdAtDate = createdAtTimestamp?.toDate ? createdAtTimestamp.toDate() : (createdAtTimestamp ? new Date(createdAtTimestamp) : null);
+
+      const lastLoginTimestamp = userData.lastLoginAt || userData.last_login_at;
       const lastLoginDate = lastLoginTimestamp?.toDate ? lastLoginTimestamp.toDate() : null;
 
-      users.push({
-        id: doc.id,
+
+      return {
         ...userData,
-        createdAt: createdAtDate,   
-        lastLoginAt: lastLoginDate, 
-      });
+        ...profileData,
+        id: userDoc.id,
+        createdAt: createdAtDate,
+        lastLoginAt: lastLoginDate,
+      };
     });
 
-   
+    let users = await Promise.all(usersPromises);
+
+
     users.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
     return { users, success: true };
@@ -86,8 +146,6 @@ export const getAllUsers = async (filters = {}) => {
     return { error: error.message, success: false };
   }
 };
-
-
 
 // Get user statistics
 export const getUserStatistics = async () => {
@@ -849,11 +907,11 @@ export const getAllProfessionalsWithUserDetails = async () => {
 
     const mergedDataPromises = professionalsSnapshot.docs.map(async (profDoc) => {
       const profData = { ...profDoc.data(), id: profDoc.id };
-      
+
       if (profData.user_id) {
         const userRef = doc(db, USERS_COLLECTION, profData.user_id);
         const userSnap = await getDoc(userRef);
-        
+
         if (userSnap.exists()) {
           const userData = userSnap.data();
           return {
@@ -865,8 +923,8 @@ export const getAllProfessionalsWithUserDetails = async () => {
         }
       }
       // Fallback if user is not found, but professional document exists
-      return { 
-        ...profData, 
+      return {
+        ...profData,
         displayName: 'User data not found',
         email: 'N/A',
         professionalStatus: profData.verification_status?.toLowerCase() || 'pending',
@@ -882,27 +940,51 @@ export const getAllProfessionalsWithUserDetails = async () => {
   }
 };
 
-export const updateProfessionalDetails = async (professionalId, userId, data) => {
+export const updateProfessionalDetails = async (professionalId, userId, data, newProfilePic = null) => {
   try {
+    // If a new profile picture is provided, upload it first.
+    if (newProfilePic && userId) {
+      const uploadResult = await uploadProfilePicture(userId, newProfilePic);
+      if (uploadResult.success) {
+        // Add the new URL to the data object to be saved.
+        data.photoURL = uploadResult.photoURL;
+        data.profile_picture = uploadResult.photoURL;
+      } else {
+        // If the upload fails, return an error.
+        throw new Error(uploadResult.error || 'Profile picture upload failed.');
+      }
+    }
+
+
     const batch = writeBatch(db);
-   
+
     const professionalRef = doc(db, PROFESSIONALS_COLLECTION, professionalId);
     const professionalUpdatePayload = {
-      
       first_name: data.first_name ?? '',
       last_name: data.last_name ?? '',
-      profession: data.profession ?? null, 
+      professional_type_id: data.professional_type_id ?? null,
       years_of_experience: data.years_of_experience ?? 0,
-      location: data.location ?? null,
+      location: data.location ?? '',
     };
+
+    // Conditionally add profile picture URL if it exists
+    if (data.profile_picture) {
+      professionalUpdatePayload.profile_picture = data.profile_picture;
+    }
+
     batch.update(professionalRef, professionalUpdatePayload);
 
     if (userId) {
       const userRef = doc(db, USERS_COLLECTION, userId);
       const userUpdatePayload = {
         displayName: data.displayName ?? '',
-        email: data.email ?? '', 
+        email: data.email ?? '',
       };
+
+      // Conditionally add photo URL if it exists
+      if (data.photoURL) {
+        userUpdatePayload.photoURL = data.photoURL;
+      }
 
       if (Object.keys(userUpdatePayload).length > 0) {
         batch.update(userRef, userUpdatePayload);

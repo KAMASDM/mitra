@@ -38,6 +38,12 @@ import {
   TablePagination,
   Divider,
   InputAdornment,
+  Tooltip,
+  CircularProgress,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import {
@@ -55,9 +61,31 @@ import {
   Delete,
   Download,
   Search,
-  Edit, // Added Delete icon
+  Edit,
+  FilePresent,
+  PhotoCamera,
+  PersonSearch,
+  MedicalServices as MedicalServicesIcon,
+  ContactPhone as ContactPhoneIcon,
+  Info as InfoIcon,
+  Bloodtype as BloodtypeIcon,
+  Cake as CakeIcon,
+  Report as ReportIcon,
+  Medication as MedicationIcon,
+  History as HistoryIcon,
+  Person as PersonIcon,
+  Phone as PhoneIcon,
+  Group as GroupIcon,
+  Work as WorkIcon,
+  Language as LanguageIcon,
+  Event as EventIcon,
+  Close as CloseIcon,
+  EmailOutlined as EmailIcon,
+  WorkOutline as ExperienceIcon,
+  LocationOnOutlined as LocationIcon,
+  VerifiedUserOutlined as VerifiedIcon,
+  CalendarMonthOutlined as CalendarIcon
 } from '@mui/icons-material';
-
 import {
   LineChart,
   Line,
@@ -66,12 +94,10 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-
-// Import admin services
 import {
   getAllUsers,
   updateUserStatus,
@@ -87,19 +113,17 @@ import {
   getProfessionalTypes,
   getAnalyticsDataForCharts,
   getAllProfessionalsWithUserDetails,
-  updateProfessionalDetails
+  updateProfessionalDetails,
 } from '../../services/adminService';
-
-// Import the missing metrics function from userService
-// import { getPlatformMetrics, getRecentUsers } from '../../services/userService';
+import { uploadProfilePicture } from '../../services/userService';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 
 const MotionCard = motion(Card);
 
 const timeSince = (date) => {
   if (!date) return 'just now';
-
   const seconds = Math.floor((new Date() - new Date(date)) / 1000);
-
   const intervals = [
     { label: 'year', seconds: 31536000 },
     { label: 'month', seconds: 2592000 },
@@ -108,36 +132,50 @@ const timeSince = (date) => {
     { label: 'minute', seconds: 60 },
     { label: 'second', seconds: 1 }
   ];
-
   for (const interval of intervals) {
     const count = Math.floor(seconds / interval.seconds);
     if (count >= 1) {
       return `${count} ${interval.label}${count > 1 ? 's' : ''} ago`;
     }
   }
-
   return 'just now';
 };
 
-const EditProfessionalDialog = ({ professional, open, onClose, onSave }) => {
+
+const EditProfessionalDialog = ({ professional, open, onClose, onSave, professionalTypes }) => {
   const [editData, setEditData] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [newProfilePic, setNewProfilePic] = useState(null);
+  const [profilePicPreview, setProfilePicPreview] = useState('');
 
   useEffect(() => {
     if (professional) {
       const name = `${professional.first_name || ''} ${professional.last_name || ''}`.trim() || professional.displayName || '';
       setEditData({ ...professional, displayName: name });
+      setProfilePicPreview(professional.photoURL || professional.profile_picture || '');
     }
-  }, [professional]);
+    return () => {
+      setNewProfilePic(null);
+      setProfilePicPreview('');
+    };
+  }, [professional, open]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setEditData(prev => ({ ...prev, [name]: value }));
+    setEditData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setNewProfilePic(file);
+      setProfilePicPreview(URL.createObjectURL(file));
+    }
   };
 
   const handleSaveChanges = async () => {
     setSaving(true);
-    await onSave(editData);
+    await onSave(editData, newProfilePic);
     setSaving(false);
   };
 
@@ -148,20 +186,52 @@ const EditProfessionalDialog = ({ professional, open, onClose, onSave }) => {
       <DialogTitle sx={{ fontWeight: 700 }}>Edit Professional Details</DialogTitle>
       <DialogContent>
         <Grid container spacing={3} sx={{ mt: 1 }}>
-          <Grid item xs={12} sm={6}>
+          <Grid item size={{ xs: 12 }} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', pt: 3 }}>
+            <Box sx={{ position: 'relative' }}>
+              <Avatar
+                src={profilePicPreview}
+                sx={{ width: 120, height: 120, mb: 2, fontSize: '3rem', bgcolor: 'primary.light' }}
+              >
+                {editData.displayName?.charAt(0)}
+              </Avatar>
+              <IconButton component="label" sx={{ position: 'absolute', bottom: 10, right: 10, bgcolor: 'primary.main', color: 'white', '&:hover': { bgcolor: 'primary.dark' } }}>
+                <PhotoCamera />
+                <input type="file" hidden accept="image/*" onChange={handleFileChange} />
+              </IconButton>
+            </Box>
+            <Typography variant="caption" color="text.secondary" align="center">
+              Click the camera to upload a new picture
+            </Typography>
+          </Grid>
+
+          <Grid item size={{ xs: 12, md: 6 }}>
             <TextField fullWidth name="displayName" label="Full Name" value={editData.displayName || ''} onChange={handleChange} />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid item size={{ xs: 12, md: 6 }}>
             <TextField fullWidth name="email" label="Email Address" value={editData.email || ''} onChange={handleChange} />
           </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField fullWidth name="profession" label="Profession" value={editData.profession || ''} onChange={handleChange} />
+          <Grid item size={{ xs: 12, md: 6 }}>
+            <FormControl fullWidth>
+              <InputLabel>Profession</InputLabel>
+              <Select
+                name="professional_type_id"
+                label="Profession"
+                value={editData.professional_type_id || ''}
+                onChange={handleChange}
+              >
+                {(professionalTypes || []).map((type) => (
+                  <MenuItem key={type.firestoreId} value={type.id}>
+                    {type.title}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid item size={{ xs: 12, md: 6 }}>
             <TextField fullWidth name="years_of_experience" label="Years of Experience" type="number" value={editData.years_of_experience || 0} onChange={handleChange} />
           </Grid>
-          <Grid item xs={12}>
-            <TextField fullWidth name="location" label="Location" value={editData.location || ''} onChange={handleChange} />
+          <Grid item size={{ xs: 12 }}>
+            <TextField fullWidth name="location" label="Location" value={editData.address || ''} onChange={handleChange} />
           </Grid>
         </Grid>
       </DialogContent>
@@ -174,6 +244,7 @@ const EditProfessionalDialog = ({ professional, open, onClose, onSave }) => {
     </Dialog>
   );
 };
+
 
 const AdminDashboard = () => {
   const theme = useTheme();
@@ -188,7 +259,6 @@ const AdminDashboard = () => {
   const [allProfessionals, setAllProfessionals] = useState([]);
   const [professionalStatusFilter, setProfessionalStatusFilter] = useState('ALL');
   const [allUsers, setAllUsers] = useState([]);
-  const [reports, setReports] = useState({});
   const [settings, setSettings] = useState({});
   const [metrics, setMetrics] = useState({});
   const [recentActivity, setRecentActivity] = useState([]);
@@ -196,30 +266,29 @@ const AdminDashboard = () => {
   const [professionalTypes, setProfessionalTypes] = useState([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
   const [selectedUser, setSelectedUser] = useState(null);
   const [userDetailsDialogOpen, setUserDetailsDialogOpen] = useState(false);
+
+  // State for the dialog tabs and client-specific data
+  const [dialogTab, setDialogTab] = useState('user'); // 'user' or 'client'
+  const [clientDetails, setClientDetails] = useState(null);
+  const [clientDetailsLoading, setClientDetailsLoading] = useState(false);
+
   const [selectedProfessional, setSelectedProfessional] = useState(null);
   const [professionalDetailsDialogOpen, setProfessionalDetailsDialogOpen] = useState(false);
   const [editProfessionalDialogOpen, setEditProfessionalDialogOpen] = useState(false);
-  // Dialog states
+
   const [actionDialog, setActionDialog] = useState({
     open: false,
     type: null,
     data: null,
+    reason: '',
   });
-
-  // const professionalTypeMap = useMemo(() => {
-  //   if (!professionalTypes) return {};
-  //   return professionalTypes.reduce((acc, type) => {
-  //     acc[type.id] = type.title;
-  //     return acc;
-  //   }, {});
-  // }, [professionalTypes]);
 
   useEffect(() => {
     fetchInitialData();
   }, []);
-
 
   const fetchInitialData = async () => {
     setLoading(true);
@@ -242,7 +311,6 @@ const AdminDashboard = () => {
       if (metricsRes.success) setMetrics(metricsRes.metrics);
       if (typesRes.success) setProfessionalTypes(typesRes.types);
       if (chartRes.success) setChartData(chartRes.chartData);
-
       if (activityRes.success) {
         setRecentActivity(activityRes.users.map(u => ({ ...u, type: u.role === 'PROFESSIONAL' ? 'New Professional' : 'New Client', timestamp: u.createdAt?.toDate ? u.createdAt.toDate() : new Date() })));
       }
@@ -260,68 +328,94 @@ const AdminDashboard = () => {
     setPage(0);
   };
 
-  // const handleTabChange = (event, newValue) => {
-  //   setTabValue(newValue);
-  //   if (newValue === 3 && Object.keys(reports).length === 0) {
-  //     fetchReports();
-  //   }
-  // };
-
-  const fetchReports = async () => {
+  // --- NEW ---
+  // Function to get client details from the 'clients' collection
+  const getClientDetailsByUserId = async (userId) => {
     try {
-      const reportsRes = await getSystemReports();
-      if (reportsRes.success) {
-        setReports(reportsRes.reports);
+      const clientsRef = collection(db, 'clients');
+      const q = query(clientsRef, where('user_id', '==', userId));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        return { success: false, error: 'No client-specific details found for this user.' };
       }
+
+      const clientDoc = querySnapshot.docs[0];
+      const details = clientDoc.data();
+
+      // Format timestamp if it exists
+      if (details.created_at?.toDate) {
+        details.created_at = details.created_at.toDate().toLocaleString();
+      }
+
+      return { success: true, details: { id: clientDoc.id, ...details } };
+
     } catch (error) {
-      showSnackbar('Failed to load reports', 'error');
+      console.error('Error fetching client details:', error);
+      return { success: false, error: error.message };
     }
   };
 
-  const handleApproveProfessional = async (professionalId) => {
-    setActionDialog({
-      open: true,
-      type: 'approve',
-      data: pendingProfessionals.find(p => p.id === professionalId),
-    });
+  // --- NEW ---
+  // Fetches client details when dialog opens
+  const fetchClientDetailsForDialog = async (userId) => {
+    if (!userId) return;
+    setClientDetailsLoading(true);
+    setClientDetails(null);
+    const clientRes = await getClientDetailsByUserId(userId);
+    if (clientRes.success) {
+      setClientDetails(clientRes.details);
+    } else {
+      console.warn(clientRes.error); // Log warning if no details found, but don't show snackbar
+    }
+    setClientDetailsLoading(false);
   };
 
-  const handleRejectProfessional = async (professionalId) => {
-    setActionDialog({
-      open: true,
-      type: 'reject',
-      data: pendingProfessionals.find(p => p.id === professionalId),
-    });
+  const professionalTypeMap = useMemo(() => {
+    if (!professionalTypes.length) return {};
+    return professionalTypes.reduce((acc, type) => {
+      acc[type.id] = type.title;
+      return acc;
+    }, {});
+  }, [professionalTypes]);
+
+
+  const handleApproveProfessional = (professional) => {
+    setActionDialog({ open: true, type: 'approve', data: professional, reason: '' });
   };
 
-  const confirmProfessionalAction = async (action, professionalId, reason = '') => {
+  const handleRejectProfessional = (professional) => {
+    setActionDialog({ open: true, type: 'reject', data: professional, reason: '' });
+  };
+
+  const confirmProfessionalAction = async () => {
+    const { type, data, reason } = actionDialog;
+    const professionalId = data?.id;
+    if (!professionalId) return;
+    setLoading(true);
     try {
-      setLoading(true);
       let result;
-
-      if (action === 'approve') {
+      if (type === 'approve') {
         result = await approveProfessional(professionalId);
         if (result.success) {
-          setPendingProfessionals(prev => prev.filter(p => p.id !== professionalId));
+          setAllProfessionals(prev => prev.map(p => p.id === professionalId ? { ...p, professionalStatus: 'verified' } : p));
           showSnackbar('Professional approved successfully');
         }
-      } else if (action === 'reject') {
+      } else if (type === 'reject') {
         result = await rejectProfessional(professionalId, reason);
         if (result.success) {
-
-          setPendingProfessionals(prev => prev.filter(p => p.id !== professionalId));
+          setAllProfessionals(prev => prev.map(p => p.id === professionalId ? { ...p, professionalStatus: 'rejected' } : p));
           showSnackbar('Professional rejected');
         }
       }
-
-      if (!result.success) {
-        showSnackbar(result.error || 'Action failed', 'error');
+      if (!result || !result.success) {
+        showSnackbar(result?.error || 'Action failed', 'error');
       }
     } catch (error) {
       showSnackbar('Operation failed', 'error');
     } finally {
       setLoading(false);
-      setActionDialog({ open: false, type: null, data: null });
+      setActionDialog({ open: false, type: null, data: null, reason: '' });
     }
   };
 
@@ -329,11 +423,8 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
       const result = await updateUserStatus(userId, newStatus);
-
       if (result.success) {
-        setAllUsers(prev => prev.map(user =>
-          user.id === userId ? { ...user, status: newStatus } : user
-        ));
+        setAllUsers(prev => prev.map(user => user.id === userId ? { ...user, status: newStatus } : user));
         showSnackbar(`User status updated to ${newStatus}`);
       } else {
         showSnackbar(result.error || 'Failed to update user status', 'error');
@@ -350,7 +441,6 @@ const AdminDashboard = () => {
       try {
         setLoading(true);
         const result = await deleteUser(userId);
-
         if (result.success) {
           setAllUsers(prev => prev.filter(user => user.id !== userId));
           showSnackbar('User deleted successfully');
@@ -391,76 +481,20 @@ const AdminDashboard = () => {
     if (professionalSearchTerm) {
       const lowercasedFilter = professionalSearchTerm.toLowerCase();
       professionals = professionals.filter(p => {
-        const name = `${p.firstName || ''} ${p.lastName || ''}`.trim() || p.displayName || '';
+        const name = `${p.first_name || ''} ${p.last_name || ''}`.trim() || p.displayName || '';
         return name.toLowerCase().includes(lowercasedFilter) || p.email?.toLowerCase().includes(lowercasedFilter);
       });
     }
     return professionals;
   }, [professionalSearchTerm, professionalStatusFilter, allProfessionals]);
 
+  // --- UPDATED ---
+  // This function now triggers the client data fetch
   const handleViewUser = (user) => {
     setSelectedUser(user);
+    setDialogTab('user'); // Always open to user tab first
+    setClientDetails(null); // Clear old client data before opening
     setUserDetailsDialogOpen(true);
-  };
-
-  const UserDetailsDialog = ({ user, open, onClose }) => {
-    if (!user) return null;
-    return (
-      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700, pb: 2 }}>User Details</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={3} sx={{ mt: 1 }}>
-            <Grid item xs={12} sx={{ textAlign: 'center' }}>
-              <Avatar
-                src={user.photoURL}
-                sx={{ width: 100, height: 100, mx: 'auto', mb: 2, bgcolor: 'primary.main', fontSize: '3rem' }}
-              >
-                {(user.displayName || user.email || 'U')?.charAt(0).toUpperCase()}
-              </Avatar>
-              <Typography variant="h6">{user.displayName || 'No name'}</Typography>
-              <Chip
-                label={user.role || 'Client'}
-                color="primary"
-                size="small"
-                sx={{ mt: 1 }}
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <Stack spacing={1.5}>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Email Address</Typography>
-                  <Typography variant="body1">{user.email}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Status</Typography>
-                  <Chip
-                    label={user.status || 'active'}
-                    color={user.status === 'active' ? 'success' : 'warning'}
-                    size="small"
-                  />
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Joined On</Typography>
-                  <Typography variant="body1">
-                    {user.createdAt ? new Date(user.createdAt).toLocaleString() : 'N/A'}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Last Login</Typography>
-                  <Typography variant="body1">
-                    {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : 'Never'}
-                  </Typography>
-                </Box>
-              </Stack>
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={onClose}>Close</Button>
-        </DialogActions>
-      </Dialog>
-    );
   };
 
   const handleViewProfessional = (professional) => {
@@ -468,120 +502,31 @@ const AdminDashboard = () => {
     setProfessionalDetailsDialogOpen(true);
   };
 
-  const ProfessionalDetailsDialog = ({ professional, open, onClose }) => {
-    if (!professional) return null;
-
-    return (
-      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700, pb: 2 }}>Professional Approval Details</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={3} sx={{ mt: 1 }}>
-            <Grid item xs={12} md={4} sx={{ textAlign: 'center' }}>
-              <Avatar
-                src={professional.photoURL}
-                sx={{ width: 100, height: 100, mx: 'auto', mb: 2, bgcolor: 'primary.main', fontSize: '3rem' }}
-              >
-                {(professional.displayName || 'P')?.charAt(0).toUpperCase()}
-              </Avatar>
-              <Typography variant="h6">{professional.displayName || 'No name'}</Typography>
-              <Chip
-                label={professional.profession}
-                color="secondary"
-                size="small"
-                sx={{ mt: 1 }}
-              />
-            </Grid>
-
-            <Grid item xs={12} md={8}>
-              <Stack spacing={2}>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Email Address</Typography>
-                  <Typography variant="body1">{professional.email}</Typography>
-                </Box>
-                <Grid container spacing={2}>
-                  <Grid item xs={6}>
-                    <Typography variant="caption" color="text.secondary">Experience</Typography>
-                    <Typography variant="body1">{professional.years_of_experience || professional.experience} years</Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="caption" color="text.secondary">Location</Typography>
-                    <Typography variant="body1">{professional.location || 'N/A'}</Typography>
-                  </Grid>
-                </Grid>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Submitted On</Typography>
-                  <Typography variant="body1">
-                    {new Date(professional.submittedDate?.toDate?.() || professional.submittedDate).toLocaleString()}
-                  </Typography>
-                </Box>
-              </Stack>
-            </Grid>
-
-            <Grid item xs={12}>
-              <Divider sx={{ my: 1 }} />
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Submitted Documents</Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap">
-                {professional.documents && professional.documents.length > 0 ? (
-                  professional.documents.map((doc, index) => (
-                    <Chip
-                      key={index}
-                      icon={<FilePresent />}
-                      label={doc}
-                      variant="outlined"
-                      color="success"
-                      onClick={() => alert(`Viewing document: ${doc}`)} // Placeholder action
-                    />
-                  ))
-                ) : (
-                  <Typography color="text.secondary">No documents submitted.</Typography>
-                )}
-              </Stack>
-            </Grid>
-
-          </Grid>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={onClose}>Close</Button>
-          <Button
-            color="error"
-            onClick={() => {
-              handleRejectProfessional(professional.id);
-              onClose();
-            }}
-          >
-            Reject
-          </Button>
-          <Button
-            variant="contained"
-            color="success"
-            onClick={() => {
-              handleApproveProfessional(professional.id);
-              onClose();
-            }}
-          >
-            Approve
-          </Button>
-        </DialogActions>
-      </Dialog>
-    );
-  };
-
   const handleEditProfessional = (professional) => {
     setSelectedProfessional(professional);
     setEditProfessionalDialogOpen(true);
   };
 
-
-  const handleSaveChanges = async (updatedData) => {
-    const payload = { ...updatedData };
+  const handleSaveChanges = async (updatedData, newProfilePic) => {
+    let payload = { ...updatedData };
+    if (newProfilePic) {
+      showSnackbar('Uploading new profile picture...', 'info');
+      const uploadResult = await uploadProfilePicture(payload.user_id, newProfilePic);
+      if (uploadResult.success) {
+        payload.photoURL = uploadResult.photoURL;
+        payload.profile_picture = uploadResult.photoURL;
+        showSnackbar('Picture uploaded successfully!', 'success');
+      } else {
+        showSnackbar('Failed to upload new profile picture.', 'error');
+        return;
+      }
+    }
     if (payload.displayName) {
       const nameParts = payload.displayName.split(' ');
       payload.first_name = nameParts[0] || '';
       payload.last_name = nameParts.slice(1).join(' ') || '';
     }
-
     const result = await updateProfessionalDetails(payload.id, payload.user_id, payload);
-
     if (result.success) {
       setAllProfessionals(prev => prev.map(p => (p.id === payload.id ? { ...p, ...payload } : p)));
       setEditProfessionalDialogOpen(false);
@@ -589,6 +534,267 @@ const AdminDashboard = () => {
     } else {
       showSnackbar(result.error || 'Failed to update details.', 'error');
     }
+  };
+
+  const UserAndClientDetailsDialog = ({ user, open, onClose }) => {
+    if (!user) return null;
+
+    const handleTabChange = (event, newValue) => {
+      setDialogTab(newValue);
+      if (newValue === 'client' && !clientDetails) {
+        fetchClientDetailsForDialog(user.id);
+      }
+    };
+
+    const DetailItem = ({ label, value }) => (
+      <Box>
+        <Typography variant="caption" color="text.secondary">{label}</Typography>
+        <Typography variant="body1">{value || 'N/A'}</Typography>
+      </Box>
+    );
+
+    const displayName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.displayName || 'No name';
+
+    return (
+      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700, pb: 0 }}>
+          <Tabs value={dialogTab} onChange={handleTabChange} sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Tab label="User Details" value="user" />
+            <Tab label="Client Details" value="client" />
+          </Tabs>
+        </DialogTitle>
+        <DialogContent>
+          {dialogTab === 'user' && (
+            <Grid container spacing={3} sx={{ mt: 1 }}>
+              <Grid item xs={12} md={4} sx={{ textAlign: 'center' }}>
+                <Avatar src={user.profile_picture} sx={{ width: 100, height: 100, mx: 'auto', mb: 2, bgcolor: 'primary.main', fontSize: '3rem' }}>
+                  {(displayName || user.email || 'U')?.charAt(0).toUpperCase()}
+                </Avatar>
+                <Typography variant="h6">{displayName}</Typography>
+                <Chip label={user.user_type} color="primary" size="small" sx={{ mt: 1 }} />
+              </Grid>
+              <Grid item xs={12} md={8}>
+                <Stack spacing={2} sx={{ mt: 2 }}>
+                  <DetailItem label="Email Address" value={user.email} />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Status </Typography>
+                    <Chip label={user.status || 'active'} color={user.status === 'active' ? 'success' : 'warning'} size="small" />
+                  </Box>
+                  <DetailItem label="Joined On" value={user.createdAt ? new Date(user.createdAt).toLocaleString() : 'N/A'} />
+                  <DetailItem label="Last Login" value={user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : 'Never'} />
+                </Stack>
+              </Grid>
+            </Grid>
+          )}
+
+          {dialogTab === 'client' && (
+            <Box sx={{ mt: 2 }}>
+              {clientDetailsLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
+              ) : clientDetails ? (
+                <Box sx={{ p: { xs: 1, sm: 2 }, bgcolor: alpha(theme.palette.grey[500], 0.05), borderRadius: 2 }}>
+                  <Grid container spacing={3}>
+
+                    {/* Left Column: Medical and Other Info */}
+                    <Grid item size={{ xs: 12, md: 7 }}>
+                      {/* Medical Info Section */}
+                      <Paper elevation={2} sx={{ p: 3, borderRadius: 3, mb: 3 }}>
+                        <Stack direction="row" spacing={1.5} alignItems="center" mb={2}>
+                          <MedicalServicesIcon color="primary" />
+                          <Typography variant="h6" fontWeight={700}>Medical Information</Typography>
+                        </Stack>
+                        <List dense>
+                          <ListItem>
+                            <ListItemIcon><BloodtypeIcon fontSize="small" /></ListItemIcon>
+                            <ListItemText primary={clientDetails.blood_group || 'N/A'} secondary="Blood Group" />
+                          </ListItem>
+                          <ListItem>
+                            <ListItemIcon><CakeIcon fontSize="small" /></ListItemIcon>
+                            <ListItemText primary={clientDetails.date_of_birth || 'N/A'} secondary="Date of Birth" />
+                          </ListItem>
+                          <ListItem>
+                            <ListItemIcon><ReportIcon fontSize="small" /></ListItemIcon>
+                            <ListItemText primary={clientDetails.allergies || 'N/A'} secondary="Allergies" />
+                          </ListItem>
+                          <ListItem>
+                            <ListItemIcon><MedicationIcon fontSize="small" /></ListItemIcon>
+                            <ListItemText primary={clientDetails.current_medications || 'N/A'} secondary="Current Medications" />
+                          </ListItem>
+                          <ListItem>
+                            <ListItemIcon><HistoryIcon fontSize="small" /></ListItemIcon>
+                            <ListItemText primary={clientDetails.medical_history || 'N/A'} secondary="Medical History" />
+                          </ListItem>
+                        </List>
+                      </Paper>
+
+                      {/* Other Info Section */}
+                      <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
+                        <Stack direction="row" spacing={1.5} alignItems="center" mb={2}>
+                          <InfoIcon color="info" />
+                          <Typography variant="h6" fontWeight={700}>Other Info</Typography>
+                        </Stack>
+                        <List dense>
+                          <ListItem>
+                            <ListItemIcon><WorkIcon fontSize="small" /></ListItemIcon>
+                            <ListItemText primary={clientDetails.occupation || 'N/A'} secondary="Occupation" />
+                          </ListItem>
+                          <ListItem>
+                            <ListItemIcon><LanguageIcon fontSize="small" /></ListItemIcon>
+                            <ListItemText primary={clientDetails.preferred_language || 'N/A'} secondary="Preferred Language" />
+                          </ListItem>
+                          <ListItem>
+                            <ListItemIcon><EventIcon fontSize="small" /></ListItemIcon>
+                            <ListItemText primary={clientDetails.created_at || 'N/A'} secondary="Profile Created" />
+                          </ListItem>
+                        </List>
+                      </Paper>
+                    </Grid>
+
+                    {/* Right Column: Emergency Contact */}
+                    <Grid item size={{ xs: 12, md: 5 }}>
+                      <Paper elevation={2} sx={{ p: 3, borderRadius: 3, border: `1px solid ${theme.palette.error.main}` }}>
+                        <Stack direction="row" spacing={1.5} alignItems="center" mb={2}>
+                          <ContactPhoneIcon color="error" />
+                          <Typography variant="h6" fontWeight={700}>Emergency Contact</Typography>
+                        </Stack>
+                        <List dense>
+                          <ListItem>
+                            <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
+                            <ListItemText primary={clientDetails.emergency_contact_name || 'N/A'} secondary="Contact Name" />
+                          </ListItem>
+                          <ListItem>
+                            <ListItemIcon><PhoneIcon fontSize="small" /></ListItemIcon>
+                            <ListItemText primary={clientDetails.emergency_contact_phone || 'N/A'} secondary="Contact Phone" />
+                          </ListItem>
+                          <ListItem>
+                            <ListItemIcon><GroupIcon fontSize="small" /></ListItemIcon>
+                            <ListItemText primary={clientDetails.emergency_contact_relationship || 'N/A'} secondary="Relationship" />
+                          </ListItem>
+                        </List>
+                      </Paper>
+                    </Grid>
+
+                  </Grid>
+                </Box>
+              ) : (
+                <Typography sx={{ textAlign: 'center', p: 4 }}>No client-specific details found.</Typography>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={onClose}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    );
+  };
+
+  const DetailItem = ({ icon, label, value }) => (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+      {icon}
+      <Box>
+        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+          {value || 'N/A'}
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          {label}
+        </Typography>
+      </Box>
+    </Box>
+  );
+  const ProfessionalDetailsDialog = ({ professional, open, onClose }) => {
+    if (!professional) return null;
+    const name = `${professional.first_name || ''} ${professional.last_name || ''}`.trim() || professional.displayName || 'Unnamed Professional';
+
+    return (
+      <Dialog
+        open={open}
+        onClose={onClose}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: '12px' } }} // Softer edges
+      >
+        <DialogTitle sx={{ fontWeight: 700, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          Professional Details
+          <IconButton aria-label="close" onClick={onClose}>
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent dividers sx={{ p: 3 }}>
+          {/* Profile Header */}
+          <Grid container spacing={3}>
+            <Grid item xs={12} sm={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <Avatar
+                src={professional.profile_picture}
+                sx={{ width: 120, height: 120, mb: 2, bgcolor: 'primary.light', fontSize: '4rem', color: 'primary.dark' }}
+              >
+                {name.charAt(0).toUpperCase()}
+              </Avatar>
+              <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
+                {name}
+              </Typography>
+              {/* <Chip
+                label={professional.profession || 'N/A'}
+                color="secondary"
+                size="small"
+                sx={{ mt: 1 }}
+              /> */}
+            </Grid>
+
+            {/* Details Section */}
+            <Grid item xs={12} sm={8}>
+              <Stack spacing={2}>
+                <DetailItem
+                  icon={<EmailIcon color="action" />}
+                  label="Email Address"
+                  value={professional.email}
+                />
+                <DetailItem
+                  icon={<ExperienceIcon color="action" />}
+                  label="Experience"
+                  value={`${professional.years_of_experience || professional.experience || 'N/A'} years`}
+                />
+                <DetailItem
+                  icon={<LocationIcon color="action" />}
+                  label="Address"
+                  value={professional.address || 'N/A'}
+                />
+                <DetailItem
+                  icon={<VerifiedIcon color="action" />}
+                  label="Status"
+                  value={professional.professionalStatus || 'N/A'}
+                />
+              </Stack>
+            </Grid>
+          </Grid>
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2, backgroundColor: 'grey.50' }}>
+          <Button onClick={onClose} color="inherit">Close</Button>
+          {professional.professionalStatus === 'pending' && (
+            <Box>
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={() => { handleRejectProfessional(professional); onClose(); }}
+                sx={{ mr: 1 }}
+              >
+                Reject
+              </Button>
+              <Button
+                variant="contained"
+                color="success"
+                onClick={() => { handleApproveProfessional(professional); onClose(); }}
+                disableElevation
+              >
+                Approve
+              </Button>
+            </Box>
+          )}
+        </DialogActions>
+      </Dialog>
+    );
   };
 
 
@@ -685,7 +891,6 @@ const AdminDashboard = () => {
     </Grid>
   );
 
-
   const renderProfessionalApprovals = () => (
     <Grid container spacing={4}>
       <Grid item xs={12}>
@@ -693,8 +898,8 @@ const AdminDashboard = () => {
           <CardContent sx={{ p: 4, minWidth: '95vw' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
               <Typography variant="h5" sx={{ fontWeight: 700 }}>Professional Management</Typography>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <TextField size="small" variant="outlined" placeholder="Search..." value={professionalSearchTerm} onChange={(e) => setProfessionalSearchTerm(e.target.value)} InputProps={{ startAdornment: (<InputAdornment position="start"><Search /></InputAdornment>), }} sx={{ minWidth: '300px' }} />
+              <Stack spacing={2} flexDirection={{ xs: 'column', sm: 'row' }} alignItems="center" width={{ xs: '100%', sm: 'auto' }} gap={2}>
+                <TextField size="small" variant="outlined" placeholder="Search..." value={professionalSearchTerm} onChange={(e) => setProfessionalSearchTerm(e.target.value)} InputProps={{ startAdornment: (<InputAdornment position="start"><Search /></InputAdornment>), }} sx={{ minWidth: 'auto' }} />
                 <FormControl size="small" sx={{ minWidth: 180 }}>
                   <InputLabel>Status</InputLabel>
                   <Select value={professionalStatusFilter} label="Status" onChange={(e) => setProfessionalStatusFilter(e.target.value)}>
@@ -714,8 +919,6 @@ const AdminDashboard = () => {
                     <TableCell>Profession</TableCell>
                     <TableCell>Experience</TableCell>
                     <TableCell>Location</TableCell>
-                    <TableCell>Submitted On</TableCell>
-                    <TableCell>Documents</TableCell>
                     <TableCell>Status</TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
@@ -735,22 +938,20 @@ const AdminDashboard = () => {
                               </Box>
                             </Box>
                           </TableCell>
-                          <TableCell>{prof.profession || 'N/A'}</TableCell>
-                          <TableCell>{prof.years_of_experience || 'N/A'} years</TableCell>
-                          <TableCell>{prof.location || 'N/A'}</TableCell>
-                          <TableCell>{new Date(prof.createdAt?.toDate() || prof.createdAt).toLocaleDateString()}</TableCell>
-                          <TableCell>{prof.documents?.length || 0} files</TableCell>
+                          <TableCell>{professionalTypeMap[prof.professional_type_id] || 'N/A'}</TableCell>
+                          <TableCell>{prof.years_of_experience ? `${prof.years_of_experience} years` : 'N/A'}</TableCell>
+                          <TableCell>{prof.address || 'N/A'}</TableCell>
                           <TableCell>
                             <Chip label={prof.professionalStatus} size="small" color={prof.professionalStatus === 'verified' ? 'success' : prof.professionalStatus === 'rejected' ? 'error' : 'warning'} />
                           </TableCell>
                           <TableCell>
                             <Stack direction="row" spacing={0}>
-                              <IconButton size="small" color="primary"><Visibility /></IconButton>
+                              <IconButton size="small" color="primary" onClick={() => handleViewProfessional(prof)}><Visibility /></IconButton>
                               <IconButton size="small" color="secondary" onClick={() => handleEditProfessional(prof)}><Edit /></IconButton>
                               {prof.professionalStatus === 'pending' && (
                                 <>
-                                  <IconButton size="small" color="success"><CheckCircle /></IconButton>
-                                  <IconButton size="small" color="error"><Cancel /></IconButton>
+                                  <IconButton size="small" color="success" onClick={() => handleApproveProfessional(prof)}><CheckCircle /></IconButton>
+                                  <IconButton size="small" color="error" onClick={() => handleRejectProfessional(prof)}><Cancel /></IconButton>
                                 </>
                               )}
                             </Stack>
@@ -771,34 +972,17 @@ const AdminDashboard = () => {
     </Grid>
   );
 
-
   const renderUserManagement = () => (
     <Grid container spacing={4}>
       <Grid item xs={12}>
         <MotionCard initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} sx={{ borderRadius: 3 }}>
-          <CardContent sx={{ p: 4, minWidth: '95vw' }}>
+          <CardContent sx={{ p: { xs: 2, md: 4, }, minWidth: '95vw' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
               <Typography variant="h5" sx={{ fontWeight: 700 }}>User Management</Typography>
-
-              <Box sx={{ gap: 2, display:'flex'}}>
-                <TextField
-                  size="small"
-                  variant="outlined"
-                  placeholder="Search..."
-                  value={userSearchTerm}
-                  onChange={(e) => setUserSearchTerm(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Search />
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{ maxWidth: '300px', flexGrow: 1 }}
-                />
+              <Box sx={{ gap: 2 }} flexDirection={{ xs: 'column', sm: 'row' }} display="flex" alignItems="center" width={{ xs: '100%', sm: 'auto' }}>
+                <TextField size="small" variant="outlined" placeholder="Search..." value={userSearchTerm} onChange={(e) => setUserSearchTerm(e.target.value)} InputProps={{ startAdornment: (<InputAdornment position="start"><Search /></InputAdornment>), }} sx={{ maxWidth: '300px', flexGrow: 1 }} />
                 <Button variant="outlined" startIcon={<Download />}>Export Users</Button>
               </Box>
-
             </Box>
             <TableContainer>
               <Table>
@@ -813,14 +997,13 @@ const AdminDashboard = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {/* --- UPDATE: Use filteredUsers here --- */}
                   {filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((user) => {
                     const professionalName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.displayName || 'Unnamed Professional';
                     return (
                       <TableRow key={user.id}>
                         <TableCell>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <Avatar src={user.photoURL} sx={{ bgcolor: 'primary.main' }}>{professionalName.charAt(0)}</Avatar>
+                            <Avatar src={user.profile_picture} sx={{ bgcolor: 'primary.main' }}>{professionalName.charAt(0)}</Avatar>
                             <Box>
                               <Typography variant="body1" sx={{ fontWeight: 600 }}>{professionalName}</Typography>
                               <Typography variant="body2" sx={{ color: 'text.secondary' }}>{user.email}</Typography>
@@ -830,14 +1013,24 @@ const AdminDashboard = () => {
                         <TableCell> <Chip label={user.role || 'Client'} size="small" color="primary" /></TableCell>
                         <TableCell><Chip label={user.status || 'active'} size="small" color={user.status === 'active' ? 'success' : 'warning'} /></TableCell>
                         <TableCell>{new Date(user.createdAt?.toDate?.() || user.createdAt).toLocaleDateString()}</TableCell>
-                        <TableCell> {user.lastLoginAt
-                          ? new Date(user.lastLoginAt).toLocaleDateString()
-                          : 'Never'}</TableCell>
+                        <TableCell> {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'Never'}</TableCell>
                         <TableCell>
-                          <Stack direction="row" spacing={1}>
-                            <IconButton size="small" onClick={() => handleViewUser(user)}><Visibility /></IconButton>
-                            <IconButton size="small" color={user.status === 'active' ? 'warning' : 'success'} onClick={() => handleUserStatusChange(user.id, user.status === 'active' ? 'suspended' : 'active')}><Block /></IconButton>
-                            <IconButton size="small" color="error" onClick={() => handleDeleteUser(user.id)}><Delete /></IconButton>
+                          <Stack direction="row" spacing={0}>
+                            <Tooltip title="View User Details">
+                              <IconButton size="small" onClick={() => handleViewUser(user)}>
+                                <Visibility />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title={user.status === 'active' ? 'Suspend User' : 'Activate User'}>
+                              <IconButton size="small" color={user.status === 'active' ? 'warning' : 'success'} onClick={() => handleUserStatusChange(user.id, user.status === 'active' ? 'suspended' : 'active')}>
+                                <Block />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete User">
+                              <IconButton size="small" color="error" onClick={() => handleDeleteUser(user.id)}>
+                                <Delete />
+                              </IconButton>
+                            </Tooltip>
                           </Stack>
                         </TableCell>
                       </TableRow>
@@ -846,7 +1039,6 @@ const AdminDashboard = () => {
                 </TableBody>
               </Table>
             </TableContainer>
-            {/* --- UPDATE: Use filteredUsers.length for the count --- */}
             <TablePagination
               rowsPerPageOptions={[10, 25, 50]}
               component="div"
@@ -865,7 +1057,6 @@ const AdminDashboard = () => {
     </Grid>
   );
 
-  // ... (renderReports and renderSettings can remain the same)
   const renderReports = () => (
     <Grid container spacing={4}>
       <Grid item size={{ xs: 12 }}>
@@ -880,7 +1071,7 @@ const AdminDashboard = () => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" sx={{ fontSize: '0.4rem', fontWeight: 500 }} />
                 <YAxis sx={{ fontSize: '0.875rem', fontWeight: 500 }} />
-                <Tooltip />
+                <RechartsTooltip />
                 <Area type="monotone" dataKey="revenue" stroke={theme.palette.primary.main} fill={alpha(theme.palette.primary.main, 0.2)} />
               </AreaChart>
             </ResponsiveContainer>
@@ -896,7 +1087,7 @@ const AdminDashboard = () => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
                 <YAxis />
-                <Tooltip />
+                <RechartsTooltip />
                 <Legend />
                 <Line type="monotone" dataKey="newUsers" stroke={theme.palette.secondary.main} />
               </LineChart>
@@ -914,7 +1105,6 @@ const AdminDashboard = () => {
           Platform Settings
         </Typography>
       </Grid>
-
       <Grid item size={{ xs: 12, md: 6 }}>
         <MotionCard initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} sx={{ borderRadius: 3 }}>
           <CardContent sx={{ p: 4 }}>
@@ -1013,7 +1203,6 @@ const AdminDashboard = () => {
     </Grid>
   );
 
-
   return (
     <Box sx={{ py: 4, bgcolor: 'background.default', minHeight: '100vh' }}>
       <Container maxWidth="xl">
@@ -1029,8 +1218,8 @@ const AdminDashboard = () => {
         {error && <Alert severity="error" sx={{ mb: 4 }}>{error}</Alert>}
         {loading && <LinearProgress sx={{ mb: 2 }} />}
 
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 4, minWidth: "95vw" }}>
-          <Tabs value={tabValue} onChange={handleTabChange}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 4, }}>
+          <Tabs value={tabValue} onChange={handleTabChange} variant="scrollable" allowScrollButtonsMobile>
             <Tab label="Overview" />
             <Tab label={`Professional Approvals (${filteredProfessionals.length})`} />
             <Tab label={`User Management (${filteredUsers.length})`} />
@@ -1045,7 +1234,7 @@ const AdminDashboard = () => {
         {tabValue === 3 && renderReports()}
         {tabValue === 4 && renderSettings()}
 
-        <UserDetailsDialog
+        <UserAndClientDetailsDialog
           user={selectedUser}
           open={userDetailsDialogOpen}
           onClose={() => setUserDetailsDialogOpen(false)}
@@ -1062,20 +1251,39 @@ const AdminDashboard = () => {
           open={editProfessionalDialogOpen}
           onClose={() => setEditProfessionalDialogOpen(false)}
           onSave={handleSaveChanges}
+          professionalTypes={professionalTypes}
         />
 
-        <Dialog open={actionDialog.open} onClose={() => setActionDialog({ open: false, type: null, data: null })}>
-          <DialogTitle>{actionDialog.type === 'approve' ? 'Approve Professional' : 'Reject Professional'}</DialogTitle>
+        <Dialog open={actionDialog.open} onClose={() => setActionDialog({ open: false, type: null, data: null, reason: '' })}>
+          <DialogTitle sx={{ fontWeight: 700 }}>
+            {actionDialog.type === 'approve' ? 'Approve Professional' : 'Reject Professional'}
+          </DialogTitle>
           <DialogContent>
-            <Typography variant="body1" sx={{ mb: 2 }}>Are you sure you want to {actionDialog.type} <strong>{actionDialog.data?.displayName}</strong>?</Typography>
+            <Typography variant="body1" sx={{ mb: 2 }}>
+              Are you sure you want to {actionDialog.type}{' '}
+              <strong>{`${actionDialog.data?.first_name || ''} ${actionDialog.data?.last_name || ''}`.trim() || actionDialog.data?.displayName}</strong>?
+            </Typography>
             {actionDialog.type === 'reject' && (
-              <TextField fullWidth label="Reason for rejection" multiline rows={3} sx={{ mt: 2 }} />
+              <TextField
+                fullWidth
+                label="Reason for rejection"
+                multiline
+                rows={3}
+                sx={{ mt: 2 }}
+                value={actionDialog.reason}
+                onChange={(e) => setActionDialog(prev => ({ ...prev, reason: e.target.value }))}
+              />
             )}
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setActionDialog({ open: false, type: null, data: null })}>Cancel</Button>
-            <Button variant="contained" color={actionDialog.type === 'approve' ? 'success' : 'error'} onClick={() => confirmProfessionalAction(actionDialog.type, actionDialog.data?.id, '')}>
-              {actionDialog.type === 'approve' ? 'Approve' : 'Reject'}
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={() => setActionDialog({ open: false, type: null, data: null, reason: '' })}>Cancel</Button>
+            <Button
+              variant="contained"
+              color={actionDialog.type === 'approve' ? 'success' : 'error'}
+              onClick={confirmProfessionalAction}
+              disabled={loading}
+            >
+              {loading ? 'Processing...' : (actionDialog.type === 'approve' ? 'Approve' : 'Reject')}
             </Button>
           </DialogActions>
         </Dialog>

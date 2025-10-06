@@ -71,7 +71,7 @@ export const generatePDF = async (htmlContent, filename = 'report') => {
           body {
             font-family: Arial, sans-serif;
             margin: 20px;
-            line-height: 1.6;
+            line-height: 1.6;           
           }
           .header {
             text-align: center;
