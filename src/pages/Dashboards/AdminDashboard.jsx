@@ -231,7 +231,7 @@ const EditProfessionalDialog = ({ professional, open, onClose, onSave, professio
             <TextField fullWidth name="years_of_experience" label="Years of Experience" type="number" value={editData.years_of_experience || 0} onChange={handleChange} />
           </Grid>
           <Grid item size={{ xs: 12 }}>
-            <TextField fullWidth name="location" label="Location" value={editData.address || ''} onChange={handleChange} />
+            <TextField fullWidth name="address" label="address" value={editData.address || ''} onChange={handleChange} />
           </Grid>
         </Grid>
       </DialogContent>
@@ -328,9 +328,7 @@ const AdminDashboard = () => {
     setPage(0);
   };
 
-  // --- NEW ---
-  // Function to get client details from the 'clients' collection
-  const getClientDetailsByUserId = async (userId) => {
+ const getClientDetailsByUserId = async (userId) => {
     try {
       const clientsRef = collection(db, 'clients');
       const q = query(clientsRef, where('user_id', '==', userId));
@@ -343,7 +341,6 @@ const AdminDashboard = () => {
       const clientDoc = querySnapshot.docs[0];
       const details = clientDoc.data();
 
-      // Format timestamp if it exists
       if (details.created_at?.toDate) {
         details.created_at = details.created_at.toDate().toLocaleString();
       }
@@ -355,9 +352,7 @@ const AdminDashboard = () => {
       return { success: false, error: error.message };
     }
   };
-
-  // --- NEW ---
-  // Fetches client details when dialog opens
+ 
   const fetchClientDetailsForDialog = async (userId) => {
     if (!userId) return;
     setClientDetailsLoading(true);
@@ -366,7 +361,7 @@ const AdminDashboard = () => {
     if (clientRes.success) {
       setClientDetails(clientRes.details);
     } else {
-      console.warn(clientRes.error); // Log warning if no details found, but don't show snackbar
+      console.warn(clientRes.error); 
     }
     setClientDetailsLoading(false);
   };
@@ -456,9 +451,10 @@ const AdminDashboard = () => {
   };
 
   const filteredUsers = useMemo(() => {
-    if (!userSearchTerm) return allUsers;
+    let usersOnly = allUsers.filter(user => user.role === 'USER' || user.role === 'CLIENT' || !user.role);
+    if (!userSearchTerm) return usersOnly;
     const lowercasedFilter = userSearchTerm.toLowerCase();
-    return allUsers.filter(user =>
+    return usersOnly.filter(user =>
       (`${user.first_name || ''} ${user.last_name || ''}`.trim().toLowerCase().includes(lowercasedFilter)) ||
       (user.displayName?.toLowerCase().includes(lowercasedFilter)) ||
       (user.email?.toLowerCase().includes(lowercasedFilter))
@@ -488,12 +484,10 @@ const AdminDashboard = () => {
     return professionals;
   }, [professionalSearchTerm, professionalStatusFilter, allProfessionals]);
 
-  // --- UPDATED ---
-  // This function now triggers the client data fetch
   const handleViewUser = (user) => {
     setSelectedUser(user);
-    setDialogTab('user'); // Always open to user tab first
-    setClientDetails(null); // Clear old client data before opening
+    setDialogTab('user'); 
+    setClientDetails(null);
     setUserDetailsDialogOpen(true);
   };
 
@@ -560,7 +554,7 @@ const AdminDashboard = () => {
         <DialogTitle sx={{ fontWeight: 700, pb: 0 }}>
           <Tabs value={dialogTab} onChange={handleTabChange} sx={{ borderBottom: 1, borderColor: 'divider' }}>
             <Tab label="User Details" value="user" />
-            <Tab label="Client Details" value="client" />
+            <Tab label="Profile Details" value="client" />
           </Tabs>
         </DialogTitle>
         <DialogContent>
@@ -712,7 +706,7 @@ const AdminDashboard = () => {
         onClose={onClose}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { borderRadius: '12px' } }} // Softer edges
+        PaperProps={{ sx: { borderRadius: '12px' } }} 
       >
         <DialogTitle sx={{ fontWeight: 700, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           Professional Details
@@ -927,6 +921,8 @@ const AdminDashboard = () => {
                   {filteredProfessionals.length > 0 ? (
                     filteredProfessionals.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((prof) => {
                       const name = `${prof.first_name || ''} ${prof.last_name || ''}`.trim() || prof.displayName || 'Unnamed Professional';
+                      const professionName = professionalTypeMap[prof.professional_type_id] || prof.profession || 'N/A';
+
                       return (
                         <TableRow key={prof.id}>
                           <TableCell>
@@ -938,7 +934,7 @@ const AdminDashboard = () => {
                               </Box>
                             </Box>
                           </TableCell>
-                          <TableCell>{professionalTypeMap[prof.professional_type_id] || 'N/A'}</TableCell>
+                          <TableCell>{professionName}</TableCell>
                           <TableCell>{prof.years_of_experience ? `${prof.years_of_experience} years` : 'N/A'}</TableCell>
                           <TableCell>{prof.address || 'N/A'}</TableCell>
                           <TableCell>

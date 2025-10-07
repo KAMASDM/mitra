@@ -1,5 +1,5 @@
 // src/pages/Auth/Register.jsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Container,
@@ -21,10 +21,10 @@ import {
   FormControlLabel,
   useTheme,
   alpha,
-  Stepper,
-  Step,
-  StepLabel,
   Grid,
+  RadioGroup,
+  Radio,
+  Divider,
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -34,38 +34,44 @@ import {
   Email,
   Lock,
   Person,
-  Phone,
-  LocationOn,
-  Work,
+  Google,
 } from '@mui/icons-material';
-import { signUpWithEmailAndPassword } from '../../services/authService';
+import { signUpWithEmailAndPassword, signInWithGoogle } from '../../services/authService';
+import { getProfessionalTypes } from '../../services/adminService';
 
 const MotionCard = motion(Card);
-const steps = ['Basic Info', 'Account Type', 'Verification'];
 
 const Register = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const [activeStep, setActiveStep] = useState(0);
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
     password: '',
     confirmPassword: '',
-    accountType: 'CLIENT',
-    profession: '',
-    experience: '',
-    specialization: '',
-    location: '',
+    accountType: 'USER',
+    professionalType: '',
     agreeTerms: false,
-    agreePrivacy: false,
   });
+  const [professionalTypes, setProfessionalTypes] = useState([]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchTypes = async () => {
+      const result = await getProfessionalTypes();
+      if (result.success) {
+        setProfessionalTypes(result.types);
+      } else {
+        setError('Could not load professional categories.');
+      }
+    };
+    fetchTypes();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, checked, type } = e.target;
@@ -76,74 +82,46 @@ const Register = () => {
     setError('');
   };
 
-  const handleNext = () => {
-    if (validateStep()) {
-      setActiveStep((prevStep) => prevStep + 1);
+  const validateForm = () => {
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.confirmPassword) {
+      setError('Please fill in all required fields.');
+      return false;
     }
-  };
-
-  const handleBack = () => {
-    setActiveStep((prevStep) => prevStep - 1);
-  };
-
-  const validateStep = () => {
-    setError('');
-    if (activeStep === 0) {
-      if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone || !formData.password || !formData.confirmPassword) {
-        setError('Please fill in all required fields');
-        return false;
-      }
-      if (formData.password !== formData.confirmPassword) {
-        setError('Passwords do not match');
-        return false;
-      }
-      if (formData.password.length < 6) {
-        setError('Password must be at least 6 characters long');
-        return false;
-      }
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match.');
+      return false;
     }
-    if (activeStep === 1) {
-      if (!formData.accountType) {
-        setError('Please select an account type');
-        return false;
-      }
-      if (formData.accountType === 'PROFESSIONAL' && (!formData.profession || !formData.experience || !formData.specialization)) {
-        setError('Please fill in all professional details');
-        return false;
-      }
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return false;
     }
-    if (activeStep === 2) {
-      if (!formData.agreeTerms || !formData.agreePrivacy) {
-        setError('Please agree to the terms and privacy policy');
-        return false;
-      }
+    if (formData.accountType === 'PROFESSIONAL' && !formData.professionalType) {
+      setError('Please select a professional type.');
+      return false;
+    }
+    if (!formData.agreeTerms) {
+      setError('You must agree to the Terms and Conditions.');
+      return false;
     }
     return true;
   };
 
-  const handleSubmit = async () => {
-    if (!validateStep()) return;
-
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
     setLoading(true);
     setError('');
-
     try {
       const additionalData = {
         displayName: `${formData.firstName} ${formData.lastName}`,
-        phone: formData.phone,
-        location: formData.location,
         accountType: formData.accountType,
         ...(formData.accountType === 'PROFESSIONAL' && {
-          profession: formData.profession,
-          experience: formData.experience,
-          specialization: formData.specialization,
+          professionalType: formData.professionalType,
         }),
       };
-
       const result = await signUpWithEmailAndPassword(formData.email, formData.password, additionalData);
-
       if (result.success) {
-        const userData = {
+        const localData = {
           user: {
             id: result.user.uid,
             email: result.user.email,
@@ -152,15 +130,14 @@ const Register = () => {
           user_type: formData.accountType,
           token: await result.user.getIdToken(),
         };
-        localStorage.setItem('loginInfo', JSON.stringify(userData));
-
-        if (formData.accountType === 'CLIENT') {
+        localStorage.setItem('loginInfo', JSON.stringify(localData));
+        if (formData.accountType === 'USER') {
           navigate('/client/dashboard');
-        } else if (formData.accountType === 'PROFESSIONAL') {
+        } else {
           navigate('/professional/dashboard');
         }
       } else {
-        setError(result.error || 'Registration failed. Please try again.');
+        setError(result.error || 'Registration failed.');
       }
     } catch (err) {
       setError('Registration failed. Please try again.');
@@ -169,381 +146,145 @@ const Register = () => {
     }
   };
 
-  const renderStepContent = () => {
-    switch (activeStep) {
-      case 0:
-        return (
-          <Grid container spacing={3}>
-            <Grid item size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                name="firstName"
-                label="First Name"
-                value={formData.firstName}
-                onChange={handleChange}
-                required
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Person />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Grid>
-            <Grid item size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                name="lastName"
-                label="Last Name"
-                value={formData.lastName}
-                onChange={handleChange}
-                required
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Person />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Grid>
-            <Grid item size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                name="email"
-                type="email"
-                label="Email Address"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Email />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Grid>
-            <Grid item size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                name="phone"
-                label="Phone Number"
-                value={formData.phone}
-                onChange={handleChange}
-                required
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Phone />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Grid>
-            <Grid item size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                label="Password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Lock />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Grid>
-            <Grid item size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                name="confirmPassword"
-                type={showConfirmPassword ? 'text' : 'password'}
-                label="Confirm Password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                required
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Lock />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        edge="end"
-                      >
-                        {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Grid>
-          </Grid>
-        );
-      case 1:
-        return (
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Account Type</InputLabel>
-                <Select
-                  name="accountType"
-                  value={formData.accountType}
-                  label="Account Type"
-                  onChange={handleChange}
-                >
-                  <MenuItem value="CLIENT">Client</MenuItem>
-                  <MenuItem value="PROFESSIONAL">Professional</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            {formData.accountType === 'PROFESSIONAL' && (
-              <>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    name="profession"
-                    label="Profession"
-                    value={formData.profession}
-                    onChange={handleChange}
-                    required
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Work />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    name="experience"
-                    label="Years of Experience"
-                    type="number"
-                    value={formData.experience}
-                    onChange={handleChange}
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    name="specialization"
-                    label="Specialization"
-                    value={formData.specialization}
-                    onChange={handleChange}
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    name="location"
-                    label="Location (City, State)"
-                    value={formData.location}
-                    onChange={handleChange}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <LocationOn />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Grid>
-              </>
-            )}
-          </Grid>
-        );
-      case 2:
-        return (
-          <Stack spacing={2}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  name="agreeTerms"
-                  checked={formData.agreeTerms}
-                  onChange={handleChange}
-                />
-              }
-              label={
-                <Typography>
-                  I agree to the{' '}
-                  <Link href="/terms" target="_blank">
-                    Terms and Conditions
-                  </Link>
-                </Typography>
-              }
-            />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  name="agreePrivacy"
-                  checked={formData.agreePrivacy}
-                  onChange={handleChange}
-                />
-              }
-              label={
-                <Typography>
-                  I agree to the{' '}
-                  <Link href="/privacy" target="_blank">
-                    Privacy Policy
-                  </Link>
-                </Typography>
-              }
-            />
-          </Stack>
-        );
-      default:
-        return null;
+  const handleSocialLogin = async () => {
+    if (formData.accountType === 'PROFESSIONAL' && !formData.professionalType) {
+      setError('Please select a professional type before continuing with Google.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const result = await signInWithGoogle({
+        accountType: formData.accountType,
+        professionalType: formData.professionalType
+      });
+
+      if (result.success) {
+        const localData = {
+          user: {
+            id: result.user.uid,
+            email: result.user.email,
+            name: result.user.displayName,
+          },
+          user_type: result.userData.role,
+          token: await result.user.getIdToken(),
+        };
+        localStorage.setItem('loginInfo', JSON.stringify(localData));
+
+        if (result.userData.role === 'PROFESSIONAL') {
+          navigate('/professional/dashboard');
+        } else {
+          navigate('/client/dashboard');
+        }
+      } else {
+        setError(result.error || 'Failed to sign in with Google.');
+      }
+    } catch (err) {
+      console.error("Social login component error:", err);
+      setError('An error occurred during social login. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
-
 
   return (
     <Box
       sx={{
-        minWidth: '98vw', // Viewport width
-        minHeight: '100vh', // Viewport height
-        overflowX: 'hidden !important', // Prevent horizontal scroll
+        minWidth: '98vw',
+        minHeight: '100vh',
+        overflowX: 'hidden !important',
         display: 'flex',
-        flexDirection: 'column', // Card ko center karne ke liye
         alignItems: 'center',
         justifyContent: 'center',
         py: 8,
         background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)}, ${alpha(theme.palette.secondary.main, 0.1)})`,
       }}
     >
-      <Container maxWidth="md">
+      <Container maxWidth="sm">
         <MotionCard
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          sx={{
-            borderRadius: 4,
-            boxShadow: '0 15px 35px rgba(0, 0, 0, 0.1)',
-          }}
+          transition={{ duration: 0.6 }}
+          sx={{ borderRadius: 4, boxShadow: '0 15px 35px rgba(0, 0, 0, 0.1)' }}
         >
-          <CardContent sx={{ p: { xs: 3, sm: 6 } }}>
+          <CardContent sx={{ p: { xs: 3, sm: 5 } }}>
             <Box sx={{ textAlign: 'center', mb: 4 }}>
-              <Typography
-                variant="h4"
-                component="h1"
-                sx={{
-                  fontWeight: 800,
-                  color: 'text.primary',
-                  mb: 1,
-                }}
-              >
+              <Typography variant="h4" component="h1" sx={{ fontWeight: 800, mb: 1 }}>
                 Join SWEEKAR
               </Typography>
-              <Typography
-                variant="body1"
-                sx={{
-                  color: 'text.secondary',
-                  fontSize: '1.1rem',
-                }}
-              >
+              <Typography variant="body1" color="text.secondary">
                 Create your account and start your journey with us
               </Typography>
             </Box>
 
-            <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-              {steps.map((label) => (
-                <Step key={label}>
-                  <StepLabel>{label}</StepLabel>
-                </Step>
-              ))}
-            </Stepper>
+            {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-            {error && (
-              <Alert severity="error" sx={{ mb: 3 }}>
-                {error}
-              </Alert>
-            )}
+            <form onSubmit={handleSubmit}>
+              <Stack spacing={2.5}>
+                <FormControl component="fieldset">
+                  <RadioGroup row name="accountType" value={formData.accountType} onChange={handleChange}>
+                    <FormControlLabel value="USER" control={<Radio />} label="User" />
+                    <FormControlLabel value="PROFESSIONAL" control={<Radio />} label="Professional" />
+                  </RadioGroup>
+                </FormControl>
 
-            <Box sx={{ mb: 4 }}>
-              {renderStepContent()}
-            </Box>
+                {formData.accountType === 'PROFESSIONAL' && (
+                  <FormControl fullWidth>
+                    <InputLabel id="professional-type-label">Professional Type</InputLabel>
+                    <Select
+                      labelId="professional-type-label"
+                      name="professionalType"
+                      value={formData.professionalType}
+                      label="Professional Type"
+                      onChange={handleChange}
+                      required
+                    >
+                      <MenuItem value=""><em>Select a profession...</em></MenuItem>
+                      {professionalTypes.map((type) => (
+                        <MenuItem key={type.firestoreId} value={type.id}>
+                          {type.title}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Button
-                onClick={handleBack}
-                disabled={activeStep === 0}
-                sx={{ px: 4 }}
-              >
-                Back
-              </Button>
+                <Grid container spacing={2}>
+                  <Grid item size={{ xs: 12, sm: 6 }}>
+                    <TextField fullWidth name="firstName" label="First Name" value={formData.firstName} onChange={handleChange} required />
+                  </Grid>
+                  <Grid item size={{ xs: 12, sm: 6 }}>
+                    <TextField fullWidth name="lastName" label="Last Name" value={formData.lastName} onChange={handleChange} required />
+                  </Grid>
+                  <Grid item size={{ xs: 12 }}>
+                    <TextField fullWidth name="email" type="email" label="Email Address" value={formData.email} onChange={handleChange} required InputProps={{ startAdornment: (<InputAdornment position="start"><Email color="action" /></InputAdornment>), }} />
+                  </Grid>
+                  <Grid item size={{ xs: 12 }}>
+                    <TextField fullWidth name="password" type={showPassword ? 'text' : 'password'} label="Password" value={formData.password} onChange={handleChange} required InputProps={{ startAdornment: (<InputAdornment position="start"><Lock color="action" /></InputAdornment>), endAdornment: (<InputAdornment position="end"><IconButton onClick={() => setShowPassword(!showPassword)} edge="end">{showPassword ? <VisibilityOff /> : <Visibility />}</IconButton></InputAdornment>), }} />
+                  </Grid>
+                  <Grid item size={{ xs: 12 }}>
+                    <TextField fullWidth name="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} label="Confirm Password" value={formData.confirmPassword} onChange={handleChange} required InputProps={{ startAdornment: (<InputAdornment position="start"><Lock color="action" /></InputAdornment>), endAdornment: (<InputAdornment position="end"><IconButton onClick={() => setShowConfirmPassword(!showConfirmPassword)} edge="end">{showConfirmPassword ? <VisibilityOff /> : <Visibility />}</IconButton></InputAdornment>), }} />
+                  </Grid>
+                </Grid>
 
-              {activeStep === steps.length - 1 ? (
-                <Button
-                  variant="contained"
-                  onClick={handleSubmit}
-                  disabled={loading}
-                  sx={{
-                    px: 4,
-                    py: 1.5,
-                    fontSize: '1.1rem',
-                    fontWeight: 600,
-                    borderRadius: 3,
-                  }}
-                >
-                  {loading ? 'Creating Account...' : 'Create Account'}
+                <FormControlLabel control={<Checkbox name="agreeTerms" checked={formData.agreeTerms} onChange={handleChange} />} label={<Typography variant="body2">I agree to the <Link href="/terms" target="_blank" onClick={(e) => e.stopPropagation()}>Terms and Conditions</Link></Typography>} />
+
+                <Button type="submit" variant="contained" size="large" disabled={loading} sx={{ py: 1.5, fontSize: '1.1rem', fontWeight: 600, borderRadius: 3 }}>
+                  {loading ? 'Creating Account...' : 'Register'}
                 </Button>
-              ) : (
-                <Button
-                  variant="contained"
-                  onClick={handleNext}
-                  sx={{
-                    px: 4,
-                    py: 1.5,
-                    fontSize: '1.1rem',
-                    fontWeight: 600,
-                    borderRadius: 3,
-                  }}
-                >
-                  Next
-                </Button>
-              )}
-            </Box>
+              </Stack>
+            </form>
+
+            <Divider sx={{ my: 3 }}>OR</Divider>
+
+            <Button fullWidth variant="outlined" size="large" startIcon={<Google />} onClick={handleSocialLogin} disabled={loading} sx={{ py: 1.5, borderRadius: 3, borderColor: 'divider', color: 'text.primary', '&:hover': { borderColor: 'primary.main', bgcolor: alpha(theme.palette.primary.main, 0.04) } }}>
+              Continue with Google
+            </Button>
 
             <Box sx={{ textAlign: 'center', mt: 4 }}>
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              <Typography variant="body2" color="text.secondary">
                 Already have an account?{' '}
-                <Link
-                  component="button"
-                  type="button"
-                  variant="body2"
-                  onClick={() => navigate('/login')}
-                  sx={{
-                    color: 'primary.main',
-                    textDecoration: 'none',
-                    fontWeight: 600,
-                    '&:hover': {
-                      textDecoration: 'underline',
-                    },
-                  }}
-                >
+                <Link component="button" type="button" variant="body2" onClick={() => navigate('/login')} sx={{ color: 'primary.main', textDecoration: 'none', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}>
                   Sign in here
                 </Link>
               </Typography>

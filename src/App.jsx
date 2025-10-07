@@ -60,12 +60,12 @@ function App() {
               
               {/* Protected Client Routes */}
               <Route path="/client/dashboard" element={
-                <ProtectedRoute allowedRoles={['CLIENT']}>
+                <ProtectedRoute allowedRoles={['CLIENT','USER']}>
                   <ClientDashboard />
                 </ProtectedRoute>
               } />
               <Route path="/client/profile" element={
-                <ProtectedRoute allowedRoles={['CLIENT']}>
+                <ProtectedRoute allowedRoles={['CLIENT','USER']}>
                   <ClientProfile />
                 </ProtectedRoute>
               } />

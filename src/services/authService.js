@@ -9,28 +9,27 @@ import {
   GoogleAuthProvider,
   FacebookAuthProvider
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp, collection } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 
-// Create user profile in Firestore
+const USERS_COLLECTION = 'users';
+const PROFESSIONALS_COLLECTION = 'professionals';
+
 const createUserProfile = async (user, additionalData = {}) => {
   if (!user) return;
 
-  const userRef = doc(db, 'users', user.uid);
+  const userRef = doc(db, USERS_COLLECTION, user.uid);
   const userSnap = await getDoc(userRef);
 
   if (!userSnap.exists()) {
     const { displayName, email, photoURL } = user;
-    const createdAt = new Date();
-
     try {
       await setDoc(userRef, {
         displayName,
         email,
         photoURL,
-        createdAt,
-        // Ensure role is always set, defaulting to 'CLIENT'
-        role: 'CLIENT',
+        createdAt: serverTimestamp(),
+        role: additionalData.role || 'USER',
         ...additionalData
       });
     } catch (error) {
@@ -38,27 +37,48 @@ const createUserProfile = async (user, additionalData = {}) => {
       throw error;
     }
   }
-
   return userRef;
 };
 
-// Sign up with email and password
 export const signUpWithEmailAndPassword = async (email, password, userData) => {
   try {
     const { user } = await createUserWithEmailAndPassword(auth, email, password);
 
-    // Update display name
     if (userData.displayName) {
       await updateProfile(user, { displayName: userData.displayName });
     }
 
-    // Create user profile in Firestore
+    const nameParts = (userData.displayName || '').split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
     await createUserProfile(user, {
       ...userData,
-      role: userData.accountType || 'CLIENT',
+      first_name: firstName,
+      last_name: lastName,
+      role: userData.accountType || 'USER',
       emailVerified: user.emailVerified,
-      isActive: true
+      isActive: true,
+      status: 'active',
     });
+
+    if (userData.accountType === 'PROFESSIONAL') {
+      const professionalDocRef = doc(db, PROFESSIONALS_COLLECTION, user.uid);
+      await setDoc(professionalDocRef, {
+        user_id: user.uid,
+        first_name: firstName,
+        last_name: lastName,
+        email: email,
+        professional_type_id: userData.professionalType || null,
+        verification_status: 'PENDING',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        years_of_experience: 0,
+        location: '',
+        profile_picture: '',
+        documents: [],
+      });
+    }
 
     return { user, success: true };
   } catch (error) {
@@ -67,43 +87,81 @@ export const signUpWithEmailAndPassword = async (email, password, userData) => {
   }
 };
 
-// Sign in with email and password
 export const signInWithEmailAndPassword_Custom = async (email, password) => {
   try {
-    console.log("Attempting to sign in with email:", email);
     const { user } = await signInWithEmailAndPassword(auth, email, password);
-    console.log("Firebase Authentication successful for user UID:", user.uid);
-
-    // Get user profile from Firestore
-    const userRef = doc(db, 'users', user.uid);
+    const userRef = doc(db, USERS_COLLECTION, user.uid);
     const userSnap = await getDoc(userRef);
 
     if (userSnap.exists()) {
       const userData = userSnap.data();
-      console.log("Firestore data found:", userData);
-
-      // *** FIX: Update last login time on successful sign-in ***
       await updateUserLastLogin(user.uid);
-
-      return {
-        user: {
-          ...user,
-          ...userData
-        },
-        success: true
-      };
+      // Return auth user and firestore data separately
+      return { user, userData, success: true };
     } else {
-      console.error("USER NOT FOUND IN FIRESTORE. UID:", user.uid);
       return { error: 'User profile not found in database.', success: false };
     }
-
   } catch (error) {
-    console.error('CRITICAL SIGN-IN ERROR:', error);
     return { error: error.message, success: false };
   }
 };
 
-// Sign out
+// --- THIS FUNCTION IS CORRECTED ---
+export const signInWithGoogle = async (additionalData = {}) => {
+  try {
+    // Corrected constructor call
+    const provider = new GoogleAuthProvider();
+    const { user } = await signInWithPopup(auth, provider);
+
+    const userRef = doc(db, USERS_COLLECTION, user.uid);
+    const userSnap = await getDoc(userRef);
+
+    // If user does not exist, create a new profile
+    if (!userSnap.exists()) {
+      const accountType = additionalData.accountType || 'USER';
+      await createUserProfile(user, {
+        provider: 'google',
+        isActive: true,
+        role: accountType,
+        status: 'active',
+        first_name: user.displayName.split(' ')[0] || '',
+        last_name: user.displayName.split(' ').slice(1).join(' ') || '',
+      });
+
+      if (accountType === 'PROFESSIONAL') {
+        const professionalDocRef = doc(db, PROFESSIONALS_COLLECTION, user.uid);
+        const professionalSnap = await getDoc(professionalDocRef);
+        if (!professionalSnap.exists()) {
+          await setDoc(professionalDocRef, {
+            user_id: user.uid,
+            first_name: user.displayName.split(' ')[0] || '',
+            last_name: user.displayName.split(' ').slice(1).join(' ') || '',
+            email: user.email,
+            professional_type_id: additionalData.professionalType || null,
+            verification_status: 'PENDING',
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            years_of_experience: 0,
+            location: '',
+          });
+        }
+      }
+    }
+
+    // Always fetch the latest user data from the database to get the correct role
+    const finalUserSnap = await getDoc(userRef);
+    const userData = finalUserSnap.exists() ? finalUserSnap.data() : {};
+
+    await updateUserLastLogin(user.uid);
+
+    // Return both the auth user and the firestore data separately
+    return { user, userData, success: true };
+  } catch (error) {
+    console.error('Error signing in with Google:', error);
+    return { error: error.message, success: false };
+  }
+};
+
 export const signOutUser = async () => {
   try {
     await signOut(auth);
@@ -114,7 +172,6 @@ export const signOutUser = async () => {
   }
 };
 
-// Reset password
 export const resetPassword = async (email) => {
   try {
     await sendPasswordResetEmail(auth, email);
@@ -125,70 +182,12 @@ export const resetPassword = async (email) => {
   }
 };
 
-// Google Sign In
-export const signInWithGoogle = async () => {
-  // debugger;
-  try {
-    const provider = new GoogleAuthProvider();
-    const { user } = await signInWithPopup(auth, provider);
-    const token = await user.getIdToken();
-    // Create or update user profile, ensuring the role is set
-    await createUserProfile(user, {
-      provider: 'google',
-      isActive: true
-    });
-
-    // Fetch the user's profile to get the role and other data
-    const userProfile = await getDoc(doc(db, 'users', user.uid));
-    const userData = userProfile.data();
-
-    // *** FIX: Update last login time on successful sign-in ***
-    await updateUserLastLogin(user.uid);
-
-    return {
-      user: { ...user, ...userData },
-      success: true
-    };
-
-  } catch (error) {
-    console.error('Error signing in with Google:', error);
-    return { error: error.message, success: false };
-  }
-};
-
-// Facebook Sign In
-export const signInWithFacebook = async () => {
-  try {
-    const provider = new FacebookAuthProvider();
-    const { user } = await signInWithPopup(auth, provider);
-
-    // Create or update user profile
-    await createUserProfile(user, {
-      provider: 'facebook',
-      isActive: true
-    });
-
-    // Fetch the user's profile to get the role and other data
-    const userProfile = await getDoc(doc(db, 'users', user.uid));
-    const userData = userProfile.data();
-
-    return {
-      user: { ...user, ...userData },
-      success: true
-    };
-  } catch (error) {
-    console.error('Error signing in with Facebook:', error);
-    return { error: error.message, success: false };
-  }
-};
-
-// Update user profile
 export const updateUserProfile = async (userId, userData) => {
   try {
-    const userRef = doc(db, 'users', userId);
+    const userRef = doc(db, USERS_COLLECTION, userId);
     await updateDoc(userRef, {
       ...userData,
-      updatedAt: new Date()
+      updatedAt: serverTimestamp()
     });
     return { success: true };
   } catch (error) {
@@ -197,10 +196,9 @@ export const updateUserProfile = async (userId, userData) => {
   }
 };
 
-// Get current user profile
 export const getCurrentUserProfile = async (userId) => {
   try {
-    const userRef = doc(db, 'users', userId);
+    const userRef = doc(db, USERS_COLLECTION, userId);
     const userSnap = await getDoc(userRef);
 
     if (userSnap.exists()) {
@@ -216,13 +214,10 @@ export const getCurrentUserProfile = async (userId) => {
 
 export const updateUserLastLogin = async (userId) => {
   if (!userId) return;
-  const userRef = doc(db, 'users', userId);
+  const userRef = doc(db, USERS_COLLECTION, userId);
   try {
-    // Use serverTimestamp() for accuracy across different client machines
     await updateDoc(userRef, { last_login_at: serverTimestamp() });
-    console.log("Updated last_login_at for user:", userId);
   } catch (error) {
     console.error("Error updating last login time:", error);
-    // This is a non-critical error, so we don't need to throw it
   }
 };

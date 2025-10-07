@@ -964,7 +964,7 @@ export const updateProfessionalDetails = async (professionalId, userId, data, ne
       last_name: data.last_name ?? '',
       professional_type_id: data.professional_type_id ?? null,
       years_of_experience: data.years_of_experience ?? 0,
-      location: data.location ?? '',
+      address: data.address ?? '',
     };
 
     // Conditionally add profile picture URL if it exists

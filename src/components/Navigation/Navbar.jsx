@@ -1,5 +1,5 @@
 // src/components/Navigation/Navbar.jsx
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   AppBar,
@@ -27,13 +27,12 @@ import {
   Menu as MenuIcon,
   Close as CloseIcon,
   Dashboard as DashboardIcon,
-  AccountCircle as AccountCircleIcon,
   Logout as LogoutIcon,
   ExpandLess,
   ExpandMore,
   AdminPanelSettings,
 } from "@mui/icons-material";
-import SweekarLogo from '../../assets/Logo.webp'; // Import the logo
+import SweekarLogo from '../../assets/Logo.webp';
 
 const navItems = [
   { label: "Home", path: "/" },
@@ -49,11 +48,11 @@ const Navbar = () => {
   const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   const [anchorEl, setAnchorEl] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(false);
-  
+
   const user = JSON.parse(localStorage.getItem("loginInfo"));
 
   const trigger = useScrollTrigger({
@@ -78,18 +77,29 @@ const Navbar = () => {
   };
 
   const handleDashboard = () => {
-    if (user?.user_type === "CLIENT") {
-      navigate("/client/dashboard");
-    } else if (user?.user_type === "PROFESSIONAL") {
-      navigate("/professional/dashboard");
-    } else if (user?.user_type === "ADMIN" || user?.user_type === "SUPERADMIN") {
-      navigate("/admin/dashboard");
+    const userRole = user?.user_type;
+
+    switch (userRole) {
+      case 'CLIENT':
+      case 'USER':
+        navigate("/client/dashboard");
+        break;
+      case 'PROFESSIONAL':
+        navigate("/professional/dashboard");
+        break;
+      case 'ADMIN':
+      case 'SUPERADMIN':
+        navigate("/admin/dashboard");
+        break;
+      default:
+        navigate("/");
+        break;
     }
     handleClose();
   };
 
   const handleProfile = () => {
-    if (user?.user_type === "CLIENT") {
+    if (user?.user_type === "CLIENT" || user?.user_type === "USER") {
       navigate("/client/profile");
     } else if (user?.user_type === "PROFESSIONAL") {
       navigate("/professional/profile");
@@ -115,7 +125,7 @@ const Navbar = () => {
           transition: "all 0.3s ease-in-out",
           backdropFilter: "blur(10px)",
           boxShadow: trigger ? "0 4px 20px rgba(0, 0, 0, 0.1)" : "none",
-          borderRadius:'0'
+          borderRadius: '0'
         }}
       >
         <Container maxWidth="xl">
@@ -141,11 +151,11 @@ const Navbar = () => {
                     flexGrow: 1,
                     display: "flex",
                     alignItems: "center",
-                     justifyContent: "flex-end", 
+                    justifyContent: "flex-end",
                   }}
                   onClick={() => navigate("/")}
                 >
-                   <img src={SweekarLogo} alt="Sweekar Logo" style={{ height: '45px', filter: trigger ? 'brightness(0) invert(1)' : 'none' }} />
+                  <img src={SweekarLogo} alt="Sweekar Logo" style={{ height: '45px', filter: trigger ? 'brightness(0) invert(1)' : 'none' }} />
                 </Box>
               </>
             ) : (
@@ -258,10 +268,10 @@ const Navbar = () => {
                           </ListItemIcon>
                           Dashboard
                         </MenuItem>
-                        {(user?.user_type === "CLIENT" || user?.user_type === "PROFESSIONAL") && (
+                        {(user?.user_type === "CLIENT" || user?.user_type === "PROFESSIONAL" || user?.user_type === "USER") && (
                           <MenuItem onClick={handleProfile}>
                             <ListItemIcon>
-                              <AccountCircleIcon fontSize="small" />
+                              <AccountCircle fontSize="small" />
                             </ListItemIcon>
                             Profile
                           </MenuItem>
@@ -350,7 +360,7 @@ const Navbar = () => {
                 navigate(item.path);
                 handleDrawerToggle();
               }}
-              sx={{ 
+              sx={{
                 py: 1.5,
                 cursor: 'pointer',
                 bgcolor: location.pathname === item.path ? 'rgba(157, 132, 183, 0.1)' : 'transparent',
@@ -382,7 +392,7 @@ const Navbar = () => {
                 }}
               >
                 <ListItemIcon>
-                  <AccountCircleIcon />
+                  <AccountCircle />
                 </ListItemIcon>
                 <ListItemText primary="Account" />
                 {openDropdown ? <ExpandLess /> : <ExpandMore />}
@@ -401,7 +411,7 @@ const Navbar = () => {
                     </ListItemIcon>
                     <ListItemText primary="Dashboard" />
                   </ListItem>
-                  {(user?.user_type === "CLIENT" || user?.user_type === "PROFESSIONAL") && (
+                  {(user?.user_type === "CLIENT" || user?.user_type === "PROFESSIONAL" || user?.user_type === "USER") && (
                     <ListItem
                       onClick={() => {
                         handleProfile();
@@ -410,7 +420,7 @@ const Navbar = () => {
                       sx={{ pl: 4, cursor: 'pointer' }}
                     >
                       <ListItemIcon>
-                        <AccountCircleIcon />
+                        <AccountCircle />
                       </ListItemIcon>
                       <ListItemText primary="Profile" />
                     </ListItem>
@@ -454,7 +464,7 @@ const Navbar = () => {
           )}
         </List>
       </Drawer>
-      
+
       {/* Spacer for fixed navbar */}
       <Toolbar
         sx={{
