@@ -13,7 +13,8 @@ import {
   limit,
   and,
   or,
-  Timestamp
+  Timestamp,
+  onSnapshot
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
@@ -156,19 +157,56 @@ export const rescheduleBooking = async (bookingId, newDate, newTime) => {
 };
 
 // Get upcoming bookings
-export const getUpcomingBookings = async (userId, userType = 'client', days = 7) => {
+// export const getUpcomingBookings = async (userId, userType = 'client', days = 7) => {
+//   try {
+//     const field = userType === 'client' ? 'clientId' : 'professionalId';
+//     const now = new Date();
+//     const futureDate = new Date();
+//     futureDate.setDate(now.getDate() + days);
+    
+//     const q = query(
+//       collection(db, BOOKINGS_COLLECTION),
+//       and(
+//         where(field, '==', userId),
+//         where('appointmentDate', '>=', Timestamp.fromDate(now)),
+//         where('appointmentDate', '<=', Timestamp.fromDate(futureDate)),
+//         or(
+//           where('status', '==', 'confirmed'),
+//           where('status', '==', 'pending')
+//         )
+//       ),
+//       orderBy('appointmentDate', 'asc')
+//     );
+    
+//     const querySnapshot = await getDocs(q);
+//     const bookings = [];
+    
+//     querySnapshot.forEach((doc) => {
+//       const data = doc.data();
+//       bookings.push({ 
+//         id: doc.id, 
+//         ...data,
+//         appointmentDate: data.appointmentDate?.toDate?.() || data.appointmentDate
+//       });
+//     });
+    
+//     return { bookings, success: true };
+//   } catch (error) {
+//     console.error('Error getting upcoming bookings:', error);
+//     return { error: error.message, success: false };
+//   }
+// };
+
+export const getUpcomingBookings = async (userId, userType = 'client') => {
   try {
     const field = userType === 'client' ? 'clientId' : 'professionalId';
     const now = new Date();
-    const futureDate = new Date();
-    futureDate.setDate(now.getDate() + days);
     
     const q = query(
       collection(db, BOOKINGS_COLLECTION),
       and(
         where(field, '==', userId),
         where('appointmentDate', '>=', Timestamp.fromDate(now)),
-        where('appointmentDate', '<=', Timestamp.fromDate(futureDate)),
         or(
           where('status', '==', 'confirmed'),
           where('status', '==', 'pending')
@@ -195,6 +233,7 @@ export const getUpcomingBookings = async (userId, userType = 'client', days = 7)
     return { error: error.message, success: false };
   }
 };
+
 
 // Get today's bookings
 export const getTodaysBookings = async (userId, userType = 'professional') => {
@@ -422,5 +461,345 @@ export const searchBookings = async (searchParams) => {
   } catch (error) {
     console.error('Error searching bookings:', error);
     return { error: error.message, success: false };
+  }
+};
+
+export const createAvailabilitySlot = async (slotData) => {
+  try {
+    const slotPayload = {
+      ...slotData,
+      created_at: Timestamp.now(), // Use Firestore Timestamp for creation date
+      is_cancelled: false,
+    };
+
+    const docRef = await addDoc(collection(db, 'availabilitySlots'), slotPayload);
+    console.log("Successfully saved event to Firestore with ID:", docRef.id);
+    return { success: true, id: docRef.id };
+    
+  } catch (error) {
+    console.error("Error creating availability slot:", error);
+    return { success: false, error: error.message };
+  }
+};
+
+// NEW FUNCTION to fetch all events/slots for a specific professional
+export const getAvailabilityForProfessional = async (professionalId) => {
+  try {
+    if (!professionalId) return { success: true, slots: [] };
+
+    const q = query(
+      collection(db, 'availabilitySlots'),
+      where('professional_id', '==', professionalId)
+    );
+
+    const querySnapshot = await getDocs(q);
+    const slots = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        professionalId: data.professional_id,
+        title: data.title,
+        // Convert Firestore Timestamps back to JavaScript Date objects
+        start: data.start_date.toDate(),
+        end: data.end_date.toDate(),
+        notes: data.notes,
+      };
+    });
+
+    return { success: true, slots };
+  } catch (error) {
+    console.error("Error fetching availability slots:", error);
+    return { success: false, error: error.message, slots: [] };
+  }
+};
+
+export const updateAvailabilitySlot = async (slotId, slotData) => {
+  try {
+    const slotRef = doc(db, 'availabilitySlots', slotId);
+    await updateDoc(slotRef, slotData);
+    console.log("Successfully updated event in Firestore with ID:", slotId);
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating availability slot:", error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Get available slots for a professional on a specific date
+export const getAvailableSlots = async (professionalId, selectedDate) => {
+  try {
+    if (!professionalId || !selectedDate) {
+      return { success: false, error: 'Professional ID and date are required' };
+    }
+
+    const startOfDay = new Date(selectedDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(selectedDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // Get availability slots for the professional on the selected date
+    const availabilityQuery = query(
+      collection(db, 'availabilitySlots'),
+      where('professional_id', '==', professionalId),
+      where('start_date', '>=', Timestamp.fromDate(startOfDay)),
+      where('start_date', '<=', Timestamp.fromDate(endOfDay)),
+      where('is_cancelled', '==', false)
+    );
+
+    // Get existing bookings for the professional on the selected date
+    const bookingsQuery = query(
+      collection(db, BOOKINGS_COLLECTION),
+      where('professionalId', '==', professionalId),
+      where('appointmentDate', '>=', Timestamp.fromDate(startOfDay)),
+      where('appointmentDate', '<=', Timestamp.fromDate(endOfDay)),
+      where('status', 'in', ['confirmed', 'pending'])
+    );
+
+    const [availabilitySnapshot, bookingsSnapshot] = await Promise.all([
+      getDocs(availabilityQuery),
+      getDocs(bookingsQuery)
+    ]);
+
+    // Convert availability slots to array
+    const availableSlots = [];
+    availabilitySnapshot.forEach((doc) => {
+      const data = doc.data();
+      availableSlots.push({
+        id: doc.id,
+        startTime: data.start_date.toDate(),
+        endTime: data.end_date.toDate(),
+        title: data.title,
+        available: true
+      });
+    });
+
+    // Get booked time slots
+    const bookedSlots = [];
+    bookingsSnapshot.forEach((doc) => {
+      const data = doc.data();
+      bookedSlots.push({
+        startTime: data.appointmentDate.toDate(),
+        endTime: new Date(data.appointmentDate.toDate().getTime() + (data.duration || 60) * 60000) // Add duration in minutes
+      });
+    });
+
+    // Filter available slots that don't overlap with booked slots
+    const freeSlots = availableSlots.filter(slot => {
+      return !bookedSlots.some(booked => {
+        return (slot.startTime < booked.endTime && slot.endTime > booked.startTime);
+      });
+    });
+
+    return { success: true, availableSlots: freeSlots };
+  } catch (error) {
+    console.error('Error getting available slots:', error);
+    return { success: false, error: error.message, availableSlots: [] };
+  }
+};
+
+// Create booking with client details
+export const createBookingWithClientDetails = async (bookingData, clientInfo) => {
+  try {
+    const user = JSON.parse(localStorage.getItem('loginInfo'));
+    if (!user?.user?.uid) {
+      return { success: false, error: 'User not authenticated' };
+    }
+
+    // Create the booking with complete client information
+    const booking = {
+      clientId: user.user.uid,
+      professionalId: bookingData.professionalId,
+      appointmentDate: Timestamp.fromDate(new Date(bookingData.appointmentDate)),
+      appointmentTime: bookingData.appointmentTime,
+      duration: bookingData.duration || 60,
+      sessionType: bookingData.sessionType || 'video_call',
+      status: 'pending',
+      amount: bookingData.amount || 0,
+      notes: bookingData.notes || '',
+      
+      // Client details
+      clientName: clientInfo.name || user.user.name || `${user.user.first_name || ''} ${user.user.last_name || ''}`.trim(),
+      clientEmail: clientInfo.email || user.user.email,
+      clientPhone: clientInfo.phone || user.user.phone || '',
+      clientAge: clientInfo.age || '',
+      clientGender: clientInfo.gender || '',
+      reasonForBooking: clientInfo.reasonForBooking || '',
+      
+      // Timestamps
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now()
+    };
+    
+    const bookingRef = await addDoc(collection(db, BOOKINGS_COLLECTION), booking);
+    
+    // Mark the availability slot as booked if slotId is provided
+    if (bookingData.slotId) {
+      const slotRef = doc(db, 'availabilitySlots', bookingData.slotId);
+      await updateDoc(slotRef, {
+        is_booked: true,
+        booked_by: user.user.uid,
+        booking_id: bookingRef.id,
+        updated_at: Timestamp.now()
+      });
+    }
+    
+    return { success: true, bookingId: bookingRef.id };
+  } catch (error) {
+    console.error('Error creating booking with client details:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Get bookings with client details for professionals
+export const getProfessionalBookingsWithClientDetails = async (professionalId) => {
+  try {
+    if (!professionalId) {
+      return { success: false, error: 'Professional ID is required' };
+    }
+
+    const bookingsQuery = query(
+      collection(db, BOOKINGS_COLLECTION),
+      where('professionalId', '==', professionalId),
+      orderBy('appointmentDate', 'asc')
+    );
+
+    const querySnapshot = await getDocs(bookingsQuery);
+    const bookings = [];
+
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      bookings.push({
+        id: doc.id,
+        ...data,
+        appointmentDate: data.appointmentDate?.toDate?.() || data.appointmentDate,
+        createdAt: data.createdAt?.toDate?.() || data.createdAt,
+        updatedAt: data.updatedAt?.toDate?.() || data.updatedAt
+      });
+    });
+
+    return { success: true, bookings };
+  } catch (error) {
+    console.error('Error getting professional bookings with client details:', error);
+    return { success: false, error: error.message, bookings: [] };
+  }
+};
+
+// Real-time listener for professional bookings
+export const subscribeToProfessionalBookings = (professionalId, callback) => {
+  if (!professionalId) {
+    console.error('Professional ID is required for subscription');
+    return () => {}; // Return empty unsubscribe function
+  }
+
+  try {
+    const bookingsQuery = query(
+      collection(db, BOOKINGS_COLLECTION),
+      where('professionalId', '==', professionalId),
+      orderBy('appointmentDate', 'asc')
+    );
+
+    const unsubscribe = onSnapshot(bookingsQuery, (querySnapshot) => {
+      const bookings = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        bookings.push({
+          id: doc.id,
+          ...data,
+          appointmentDate: data.appointmentDate?.toDate?.() || data.appointmentDate,
+          createdAt: data.createdAt?.toDate?.() || data.createdAt,
+          updatedAt: data.updatedAt?.toDate?.() || data.updatedAt
+        });
+      });
+      callback({ success: true, bookings });
+    }, (error) => {
+      console.error('Error in bookings subscription:', error);
+      callback({ success: false, error: error.message, bookings: [] });
+    });
+
+    return unsubscribe;
+  } catch (error) {
+    console.error('Error setting up bookings subscription:', error);
+    return () => {}; // Return empty unsubscribe function
+  }
+};
+
+// Real-time listener for client bookings
+export const subscribeToClientBookings = (clientId, callback) => {
+  if (!clientId) {
+    console.error('Client ID is required for subscription');
+    return () => {}; // Return empty unsubscribe function
+  }
+
+  try {
+    const bookingsQuery = query(
+      collection(db, BOOKINGS_COLLECTION),
+      where('clientId', '==', clientId),
+      orderBy('appointmentDate', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(bookingsQuery, (querySnapshot) => {
+      const bookings = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        bookings.push({
+          id: doc.id,
+          ...data,
+          appointmentDate: data.appointmentDate?.toDate?.() || data.appointmentDate,
+          createdAt: data.createdAt?.toDate?.() || data.createdAt,
+          updatedAt: data.updatedAt?.toDate?.() || data.updatedAt
+        });
+      });
+      callback({ success: true, bookings });
+    }, (error) => {
+      console.error('Error in bookings subscription:', error);
+      callback({ success: false, error: error.message, bookings: [] });
+    });
+
+    return unsubscribe;
+  } catch (error) {
+    console.error('Error setting up bookings subscription:', error);
+    return () => {}; // Return empty unsubscribe function
+  }
+};
+
+// Real-time listener for availability slots
+export const subscribeToAvailabilitySlots = (professionalId, callback) => {
+  if (!professionalId) {
+    console.error('Professional ID is required for subscription');
+    return () => {}; // Return empty unsubscribe function
+  }
+
+  try {
+    const slotsQuery = query(
+      collection(db, 'availabilitySlots'),
+      where('professional_id', '==', professionalId)
+    );
+
+    const unsubscribe = onSnapshot(slotsQuery, (querySnapshot) => {
+      const slots = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        slots.push({
+          id: doc.id,
+          professionalId: data.professional_id,
+          title: data.title,
+          start: data.start_date?.toDate?.() || data.start_date,
+          end: data.end_date?.toDate?.() || data.end_date,
+          notes: data.notes,
+          isBooked: data.is_booked || false,
+          bookedBy: data.booked_by || null,
+          bookingId: data.booking_id || null,
+        });
+      });
+      callback({ success: true, slots });
+    }, (error) => {
+      console.error('Error in availability slots subscription:', error);
+      callback({ success: false, error: error.message, slots: [] });
+    });
+
+    return unsubscribe;
+  } catch (error) {
+    console.error('Error setting up availability slots subscription:', error);
+    return () => {}; // Return empty unsubscribe function
   }
 };

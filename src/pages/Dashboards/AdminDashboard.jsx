@@ -84,7 +84,8 @@ import {
   WorkOutline as ExperienceIcon,
   LocationOnOutlined as LocationIcon,
   VerifiedUserOutlined as VerifiedIcon,
-  CalendarMonthOutlined as CalendarIcon
+  CalendarMonthOutlined as CalendarIcon,
+  CalendarToday
 } from '@mui/icons-material';
 import {
   LineChart,
@@ -299,9 +300,9 @@ const AdminDashboard = () => {
         getAllUsers(),
         getPlatformSettings(),
         getPlatformMetrics(),
-        getRecentUsers(3),
-        getAnalyticsDataForCharts(30),
-        getProfessionalTypes(),
+        getRecentUsers(3), // Last 3 users
+        getAnalyticsDataForCharts(30), // Last 30 days
+        getProfessionalTypes(), // Fetch professional types
       ]);
 
       if (statsRes.success) setPlatformStats(statsRes.statistics);
@@ -328,7 +329,7 @@ const AdminDashboard = () => {
     setPage(0);
   };
 
- const getClientDetailsByUserId = async (userId) => {
+  const getClientDetailsByUserId = async (userId) => {
     try {
       const clientsRef = collection(db, 'clients');
       const q = query(clientsRef, where('user_id', '==', userId));
@@ -352,7 +353,7 @@ const AdminDashboard = () => {
       return { success: false, error: error.message };
     }
   };
- 
+
   const fetchClientDetailsForDialog = async (userId) => {
     if (!userId) return;
     setClientDetailsLoading(true);
@@ -361,7 +362,7 @@ const AdminDashboard = () => {
     if (clientRes.success) {
       setClientDetails(clientRes.details);
     } else {
-      console.warn(clientRes.error); 
+      console.warn(clientRes.error);
     }
     setClientDetailsLoading(false);
   };
@@ -486,7 +487,7 @@ const AdminDashboard = () => {
 
   const handleViewUser = (user) => {
     setSelectedUser(user);
-    setDialogTab('user'); 
+    setDialogTab('user');
     setClientDetails(null);
     setUserDetailsDialogOpen(true);
   };
@@ -559,26 +560,62 @@ const AdminDashboard = () => {
         </DialogTitle>
         <DialogContent>
           {dialogTab === 'user' && (
-            <Grid container spacing={3} sx={{ mt: 1 }}>
-              <Grid item xs={12} md={4} sx={{ textAlign: 'center' }}>
-                <Avatar src={user.profile_picture} sx={{ width: 100, height: 100, mx: 'auto', mb: 2, bgcolor: 'primary.main', fontSize: '3rem' }}>
-                  {(displayName || user.email || 'U')?.charAt(0).toUpperCase()}
-                </Avatar>
-                <Typography variant="h6">{displayName}</Typography>
-                <Chip label={user.user_type} color="primary" size="small" sx={{ mt: 1 }} />
+            <Box>
+              {/* Profile Header */}
+              <Grid container spacing={3} alignItems="center" sx={{ mb: 4 }}>
+                <Grid item xs={12} sm={4} md={3} sx={{ textAlign: 'center' }}>
+                  <Avatar
+                    src={user.profile_picture}
+                    sx={{
+                      width: 120,
+                      height: 120,
+                      mx: 'auto',
+                      bgcolor: 'primary.light',
+                      fontSize: '3.5rem',
+                      border: `3px solid ${theme.palette.primary.main}`
+                    }}
+                  >
+                    {(displayName || user.email || 'U')?.charAt(0).toUpperCase()}
+                  </Avatar>
+                </Grid>
+                <Grid item xs={12} sm={8} md={9}>
+                  <Typography variant="h4" sx={{ fontWeight: 700 }}>{displayName}</Typography>
+                  <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>{user.email}</Typography>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Chip
+                      label={user.role || 'Client'}
+                      color="primary"
+                      size="small"
+                      sx={{ fontWeight: 600 }}
+                    />
+                    <Chip
+                      label={user.status || 'active'}
+                      color={user.status === 'active' ? 'success' : 'warning'}
+                      size="small"
+                      sx={{ fontWeight: 600 }}
+                    />
+                  </Stack>
+                </Grid>
               </Grid>
-              <Grid item xs={12} md={8}>
-                <Stack spacing={2} sx={{ mt: 2 }}>
-                  <DetailItem label="Email Address" value={user.email} />
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">Status </Typography>
-                    <Chip label={user.status || 'active'} color={user.status === 'active' ? 'success' : 'warning'} size="small" />
-                  </Box>
-                  <DetailItem label="Joined On" value={user.createdAt ? new Date(user.createdAt).toLocaleString() : 'N/A'} />
-                  <DetailItem label="Last Login" value={user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : 'Never'} />
-                </Stack>
+
+              <Divider sx={{ mb: 4 }} />
+
+              {/* Other Details in a Grid */}
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6}>
+                  <DetailItem icon={<CalendarToday />} label="Joined On" value={user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'} />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <DetailItem icon={<HistoryIcon />} label="Last Login" value={user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'Never'} />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <DetailItem icon={<VerifiedIcon />} label="Email" value={user.email} />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <DetailItem icon={<PhoneIcon />} label="Phone Number" value={user.phone || 'N/A'} />
+                </Grid>
               </Grid>
-            </Grid>
+            </Box>
           )}
 
           {dialogTab === 'client' && (
@@ -706,7 +743,7 @@ const AdminDashboard = () => {
         onClose={onClose}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { borderRadius: '12px' } }} 
+        PaperProps={{ sx: { borderRadius: '12px' } }}
       >
         <DialogTitle sx={{ fontWeight: 700, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           Professional Details

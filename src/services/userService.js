@@ -69,8 +69,9 @@ export const getProfessionals = async (filters = {}) => {
 
     const queryConstraints = [];
 
-    // Always filter for verified professionals
-    queryConstraints.push(where('verification_status', '==', 'VERIFIED'));
+    // Filter for verified professionals and pending verification (more inclusive)
+    // This allows showing professionals who are either verified or pending approval
+    // queryConstraints.push(where('verification_status', 'in', ['VERIFIED', 'PENDING']));
 
     // If a specific category ID is provided (and it's not 'All'), add a where clause.
     if (filters.professionalTypeId && filters.professionalTypeId !== 'All') {
