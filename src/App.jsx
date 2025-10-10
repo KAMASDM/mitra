@@ -20,9 +20,9 @@ import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 
 // Dashboard Pages
-import ClientDashboard from './pages/Dashboards/ClientDashboard';
+import ClientDashboard from './pages/Dashboards/ClientDashboard_old';
 import ClientProfile from './pages/Profiles/ClientProfile';
-import ProfessionalDashboard from './pages/Dashboards/ProfessionalDashboard';
+import ProfessionalDashboard from './pages/Dashboards/ProfessionalDashboard_old';
 import ProfessionalProfile from './pages/Profiles/ProfessionalProfile';
 import AdminDashboard from './pages/Dashboards/AdminDashboard';
 

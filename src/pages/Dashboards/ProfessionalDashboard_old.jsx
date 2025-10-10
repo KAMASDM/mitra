@@ -584,7 +584,7 @@
 //         </Grid>
 //       </Container>
 
-      
+
 //     </Box>
 //   );
 // };
@@ -592,7 +592,7 @@
 // export default ProfessionalDashboard;
 
 // src/pages/Dashboards/ProfessionalDashboard.jsx
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Container,
@@ -613,6 +613,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  CircularProgress,
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -631,16 +632,15 @@ import {
   Assessment,
   Close as CloseIcon,
 } from '@mui/icons-material';
-import { ScheduleManagementView } from './ClientDashboard'; // <-- IMPORT THE REUSABLE COMPONENT
+import { ScheduleManagementView } from './ClientDashboard_old'; // <-- IMPORT THE REUSABLE COMPONENT
 
+import {
+  subscribeToProfessionalBookings,
+   updateBookingStatus,
+   updateAvailabilitySlot,
+  createBookingFromSlot
+} from '../../services/bookingService';
 const MotionCard = motion(Card);
-
-// Mock data (remains the same)
-const todayAppointments = [
-  { id: 1, client: 'Sarah K.', time: '10:00 AM', type: 'Video Call', duration: '60 min', status: 'confirmed', notes: 'Follow-up session for anxiety management' },
-  { id: 2, client: 'Alex M.', time: '2:30 PM', type: 'In-Person', duration: '45 min', status: 'pending', notes: 'Initial consultation' },
-  { id: 3, client: 'Jordan P.', time: '4:00 PM', type: 'Phone Call', duration: '30 min', status: 'confirmed', notes: 'Career guidance session' },
-];
 const earnings = { today: 8500, thisWeek: 45000, thisMonth: 185000, total: 560000 };
 
 const ProfessionalDashboard = () => {
@@ -648,37 +648,119 @@ const ProfessionalDashboard = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('loginInfo'));
   const [isAvailable, setIsAvailable] = useState(true);
-  
-  // --- STATE FOR SCHEDULE MODAL ---
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [bookings, setBookings] = useState([]); // This will hold all bookings from the real-time listener
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [stats, setStats] = useState({
+    todaysAppointments: 0,
+    totalClients: 0,
+    averageRating: 4.8, // Placeholder
+    monthlyEarnings: 0
+  });
 
-  const stats = [
+  const statsArray = [
     { label: 'Today\'s Sessions', value: '3', icon: <CalendarToday />, color: '#9D84B7' },
     { label: 'Total Clients', value: '89', icon: <People />, color: '#F4A259' },
     { label: 'Average Rating', value: '4.8', icon: <Star />, color: '#E74C3C' },
     { label: 'This Month', value: '₹1,85,000', icon: <TrendingUp />, color: '#4DAA57' },
   ];
 
+  useEffect(() => {
+    // Ensure user ID is available before subscribing
+    if (!user?.user?.id) {
+      setError("User not found. Please log in again.");
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    // Subscribe to bookings and get an 'unsubscribe' function back
+    const unsubscribe = subscribeToProfessionalBookings(user.user.id, (result) => {
+      if (result.success) {
+        setBookings(result.bookings); // Update state with all bookings for this professional
+
+        // Calculate dynamic stats based on the fetched bookings
+        const now = new Date();
+        const completedBookings = result.bookings.filter(b => b.status === 'completed');
+        const uniqueClients = new Set(result.bookings.map(b => b.clientId)).size;
+        const monthlyEarnings = completedBookings
+          .filter(b => b.appointmentDate.getMonth() === now.getMonth() && b.appointmentDate.getFullYear() === now.getFullYear())
+          .reduce((sum, b) => sum + (b.amount || 0), 0);
+
+        setStats({
+          todaysAppointments: result.bookings.filter(b => b.appointmentDate.toDateString() === now.toDateString()).length,
+          totalClients: uniqueClients,
+          averageRating: 4.8, // Placeholder
+          monthlyEarnings: monthlyEarnings
+        });
+      } else {
+        setError(result.error || "Failed to load bookings.");
+      }
+      setLoading(false);
+    });
+
+    // Cleanup: Unsubscribe from the real-time listener when the component unmounts
+    return () => unsubscribe();
+  }, [user?.user?.id]);
+
+  const todayAppointments = useMemo(() => {
+    const today = new Date().toDateString();
+    // Filter the full list of bookings to only include those for today's date
+    return bookings.filter(b => b.appointmentDate.toDateString() === today);
+  }, [bookings]);
+
+  // --- ACTION HANDLERS ---
+  const handleAcceptAppointment = async (appointmentId) => {
+    const result = await updateBookingStatus(appointmentId, 'confirmed');
+    if (!result.success) alert('Failed to accept appointment.');
+    // UI updates automatically because of the real-time listener
+  };
+
+  const handleDeclineAppointment = async (appointmentId) => {
+    const result = await updateBookingStatus(appointmentId, 'cancelled', { cancellationReason: 'Declined by professional' });
+    if (!result.success) alert('Failed to decline appointment.');
+    // UI updates automatically
+  };
+  const getStatusChipProps = (status) => {
+    switch (status) {
+      case 'confirmed': return { color: 'success', label: 'Confirmed' };
+      case 'pending': return { color: 'warning', label: 'Pending' };
+      case 'completed': return { color: 'info', label: 'Completed' };
+      case 'cancelled': return { color: 'error', label: 'Cancelled' };
+      default: return { color: 'default', label: status };
+    }
+  };
+
+  const getSessionTypeIcon = (sessionType) => {
+    if (sessionType === 'In-Person') return <InPersonIcon />;
+    if (sessionType === 'Phone Call') return <Phone />;
+    return <VideoCall />;
+  };
+
+  if (loading) {
+    return <Box display="flex" justifyContent="center" alignItems="center" height="100vh"><CircularProgress /></Box>;
+  }
   return (
     <Box sx={{ py: 4, bgcolor: 'background.default', minHeight: '100vh' }}>
       <Container maxWidth="xl">
         {/* Welcome Header */}
         <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Box>
-              <Typography variant="h4" component="h1" sx={{ fontWeight: 800 }}>
-                Welcome, {user?.user?.name || 'Professional'}! 👨‍⚕️
-              </Typography>
-              <Typography variant="h6" sx={{ color: 'text.secondary', fontWeight: 400 }}>
-                Here's your practice overview for today.
-              </Typography>
-            </Box>
-            <FormControlLabel control={<Switch checked={isAvailable} onChange={(e) => setIsAvailable(e.target.checked)} color="success" />} label="Available for bookings" />
+          <Box>
+            <Typography variant="h4" component="h1" sx={{ fontWeight: 800 }}>
+              Welcome, {user?.user?.name || 'Professional'}! 👨‍⚕️
+            </Typography>
+            <Typography variant="h6" sx={{ color: 'text.secondary', fontWeight: 400 }}>
+              Here's your practice overview for today.
+            </Typography>
+          </Box>
+          <FormControlLabel control={<Switch checked={isAvailable} onChange={(e) => setIsAvailable(e.target.checked)} color="success" />} label="Available for bookings" />
         </Box>
 
         {/* Stats Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          {stats.map((stat, index) => (
-            <Grid item xs={12} sm={6} md={3} key={index}>
+          {statsArray.map((stat, index) => (
+            <Grid item key={index} size={{ xs: 12, sm: 6, md: 3 }}>
               <MotionCard initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: index * 0.1 }} sx={{ p: 3, borderRadius: 3, '&:hover': { transform: 'translateY(-4px)', boxShadow: `0 10px 25px ${alpha(stat.color, 0.2)}` } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box>
@@ -698,38 +780,52 @@ const ProfessionalDashboard = () => {
           {/* Today's Appointments */}
           <Grid item xs={12} lg={8}>
             <MotionCard initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} sx={{ borderRadius: 3, mb: 4 }}>
-              <CardContent sx={{ p: 4 }}>
+              <CardContent sx={{ p: { xs: 2, md: 4 } }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                   <Typography variant="h5" sx={{ fontWeight: 700 }}>Today's Appointments</Typography>
-                  <Button variant="outlined" size="small" startIcon={<CalendarToday />}>View Full Calendar</Button>
+                  <Button variant="outlined" size="small" startIcon={<CalendarToday />} onClick={() => setIsScheduleModalOpen(true)}>View Full Calendar</Button>
                 </Box>
                 <Stack spacing={3}>
-                  {todayAppointments.map((appointment) => (
-                    <Paper key={appointment.id} sx={{ p: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Box sx={{ flexGrow: 1 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                            <Typography variant="h6" sx={{ fontWeight: 600 }}>{appointment.client}</Typography>
-                            <Chip label={appointment.status} size="small" color={appointment.status === 'confirmed' ? 'success' : 'warning'}/>
-                          </Box>
-                          <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
-                            <Chip icon={<Schedule />} label={`${appointment.time} (${appointment.duration})`} size="small" variant="outlined" />
-                            <Chip icon={appointment.type === 'Video Call' ? <VideoCall /> : <Phone />} label={appointment.type} size="small" color="primary" />
-                          </Stack>
-                          <Typography variant="body2" sx={{ color: 'text.secondary' }}>{appointment.notes}</Typography>
+                  {/* DYNAMICALLY RENDER todayAppointments INSTEAD OF MOCK DATA */}
+                  {todayAppointments.length > 0 ? todayAppointments.map((appointment) => (
+                    <Paper key={appointment.id} variant="outlined" sx={{ p: 2.5, borderRadius: 2.5 }}>
+                      <Stack spacing={1.5}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Typography variant="h6" sx={{ fontWeight: 600 }}>{appointment.clientName}</Typography>
+                          <Chip size="small" {...getStatusChipProps(appointment.status)} />
                         </Box>
-                        <Stack direction="row" spacing={1}>
-                          {appointment.status === 'pending' && (<><IconButton color="success"><CheckCircle /></IconButton><IconButton color="error"><Cancel /></IconButton></>)}
-                          <IconButton color="primary"><VideoCall /></IconButton><IconButton color="primary"><Chat /></IconButton>
-                        </Stack>
-                      </Box>
+
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Chip icon={<Schedule fontSize="small" />} label={`${appointment.appointmentTime} (${appointment.duration} min)`} size="small" variant="outlined" />
+                            <Chip icon={getSessionTypeIcon(appointment.sessionType)} label={appointment.sessionType.replace(/_/g, ' ')} size="small" variant="outlined" />
+                          </Stack>
+                          <Stack direction="row" spacing={0.5}>
+                            {appointment.status === 'pending' && (
+                              <>
+                                <IconButton size="small" color="error" onClick={() => handleDeclineAppointment(appointment.id)}><Cancel /></IconButton>
+                                <IconButton size="small" color="success" onClick={() => handleAcceptAppointment(appointment.id)}><CheckCircle /></IconButton>
+                              </>
+                            )}
+                            <IconButton size="small"><VideoCall /></IconButton>
+                            <IconButton size="small"><Chat /></IconButton>
+                          </Stack>
+                        </Box>
+
+                        {appointment.notes && (
+                          <Typography variant="body2" sx={{ color: 'text.secondary', pt: 1, borderTop: 1, borderColor: 'divider' }}>
+                            {appointment.notes}
+                          </Typography>
+                        )}
+                      </Stack>
                     </Paper>
-                  ))}
+                  )) : (
+                    <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>No appointments scheduled for today.</Typography>
+                  )}
                 </Stack>
               </CardContent>
             </MotionCard>
           </Grid>
-
           {/* Sidebar */}
           <Grid item xs={12} lg={4}>
             {/* Quick Actions */}
@@ -746,7 +842,7 @@ const ProfessionalDashboard = () => {
                 </Stack>
               </CardContent>
             </MotionCard>
-            
+
             {/* Earnings Overview */}
             <MotionCard initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.2 }} sx={{ borderRadius: 3, mb: 4 }}>
               <CardContent sx={{ p: 4 }}>
@@ -768,7 +864,7 @@ const ProfessionalDashboard = () => {
           </Grid>
         </Grid>
       </Container>
-      
+
       {/* --- SCHEDULE MANAGEMENT DIALOG --- */}
       <Dialog open={isScheduleModalOpen} onClose={() => setIsScheduleModalOpen(false)} fullWidth maxWidth="md">
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -776,13 +872,14 @@ const ProfessionalDashboard = () => {
           <IconButton onClick={() => setIsScheduleModalOpen(false)}><CloseIcon /></IconButton>
         </DialogTitle>
         <DialogContent sx={{ p: 0, height: '75vh', overflow: 'hidden' }}>
-          <ScheduleManagementView 
+          <ScheduleManagementView
             professional={{ id: user.user.id, ...user.user }} // Pass professional's own data
             user={user}
             isEditable={true} // Professional can edit their own schedule
           />
         </DialogContent>
       </Dialog>
+      
     </Box>
   );
 };
