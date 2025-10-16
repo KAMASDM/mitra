@@ -618,7 +618,6 @@ import {
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
-  CalendarToday,
   TrendingUp,
   People,
   Star,
@@ -631,19 +630,21 @@ import {
   Edit,
   Assessment,
   Close as CloseIcon,
+  CalendarMonth,
 } from '@mui/icons-material';
-import { ScheduleManagementView } from './ClientDashboard_old'; // <-- IMPORT THE REUSABLE COMPONENT
+import { ScheduleManagementView } from './ClientDashboard_old';
 
 import {
   subscribeToProfessionalBookings,
-   updateBookingStatus,
-   updateAvailabilitySlot,
-  createBookingFromSlot
+  updateBookingStatus,
+  // updateAvailabilitySlot,
+  // createBookingFromSlot
 } from '../../services/bookingService';
 const MotionCard = motion(Card);
 const earnings = { today: 8500, thisWeek: 45000, thisMonth: 185000, total: 560000 };
 
 const ProfessionalDashboard = () => {
+
   const theme = useTheme();
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('loginInfo'));
@@ -651,19 +652,18 @@ const ProfessionalDashboard = () => {
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [bookings, setBookings] = useState([]); // This will hold all bookings from the real-time listener
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [stats, setStats] = useState({
     todaysAppointments: 0,
     totalClients: 0,
-    averageRating: 4.8, // Placeholder
+    averageRating: 0, // Placeholder
     monthlyEarnings: 0
   });
 
   const statsArray = [
-    { label: 'Today\'s Sessions', value: '3', icon: <CalendarToday />, color: '#9D84B7' },
-    { label: 'Total Clients', value: '89', icon: <People />, color: '#F4A259' },
-    { label: 'Average Rating', value: '4.8', icon: <Star />, color: '#E74C3C' },
-    { label: 'This Month', value: '₹1,85,000', icon: <TrendingUp />, color: '#4DAA57' },
+    { label: 'Today\'s Sessions', value: stats.todaysAppointments, icon: <CalendarMonth />, color: '#5C4033' },
+    { label: 'Total Clients', value: stats.totalClients, icon: <People />, color: '#5C4033' },
+    { label: 'Average Rating', value: stats.averageRating, icon: <Star />, color: '#5C4033' },
+    { label: 'This Month', value: `₹${stats.monthlyEarnings.toLocaleString()}`, icon: <TrendingUp />, color: '#5C4033' },
   ];
 
   useEffect(() => {
@@ -691,7 +691,7 @@ const ProfessionalDashboard = () => {
         setStats({
           todaysAppointments: result.bookings.filter(b => b.appointmentDate.toDateString() === now.toDateString()).length,
           totalClients: uniqueClients,
-          averageRating: 4.8, // Placeholder
+          averageRating: 0, // Placeholder
           monthlyEarnings: monthlyEarnings
         });
       } else {
@@ -701,6 +701,7 @@ const ProfessionalDashboard = () => {
     });
 
     // Cleanup: Unsubscribe from the real-time listener when the component unmounts
+    
     return () => unsubscribe();
   }, [user?.user?.id]);
 
@@ -720,8 +721,9 @@ const ProfessionalDashboard = () => {
   const handleDeclineAppointment = async (appointmentId) => {
     const result = await updateBookingStatus(appointmentId, 'cancelled', { cancellationReason: 'Declined by professional' });
     if (!result.success) alert('Failed to decline appointment.');
-    // UI updates automatically
   };
+
+  // --- HELPERS ---
   const getStatusChipProps = (status) => {
     switch (status) {
       case 'confirmed': return { color: 'success', label: 'Confirmed' };
@@ -732,6 +734,7 @@ const ProfessionalDashboard = () => {
     }
   };
 
+  // Return appropriate icon based on session type
   const getSessionTypeIcon = (sessionType) => {
     if (sessionType === 'In-Person') return <InPersonIcon />;
     if (sessionType === 'Phone Call') return <Phone />;
@@ -778,12 +781,12 @@ const ProfessionalDashboard = () => {
 
         <Grid container spacing={4}>
           {/* Today's Appointments */}
-          <Grid item xs={12} lg={8}>
+          <Grid item size={{ xs: 12, lg: 8 }}>
             <MotionCard initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} sx={{ borderRadius: 3, mb: 4 }}>
               <CardContent sx={{ p: { xs: 2, md: 4 } }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, gap: 2 }}>
                   <Typography variant="h5" sx={{ fontWeight: 700 }}>Today's Appointments</Typography>
-                  <Button variant="outlined" size="small" startIcon={<CalendarToday />} onClick={() => setIsScheduleModalOpen(true)}>View Full Calendar</Button>
+                  <Button variant="outlined" size="small" startIcon={<CalendarMonth />} onClick={() => setIsScheduleModalOpen(true)}>View Full Calendar</Button>
                 </Box>
                 <Stack spacing={3}>
                   {/* DYNAMICALLY RENDER todayAppointments INSTEAD OF MOCK DATA */}
@@ -827,13 +830,13 @@ const ProfessionalDashboard = () => {
             </MotionCard>
           </Grid>
           {/* Sidebar */}
-          <Grid item xs={12} lg={4}>
+          <Grid item size={{ xs: 12, lg: 4 }}>
             {/* Quick Actions */}
             <MotionCard initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} sx={{ borderRadius: 3, mb: 4 }}>
               <CardContent sx={{ p: 4 }}>
                 <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>Quick Actions</Typography>
                 <Stack spacing={2}>
-                  <Button variant="contained" fullWidth startIcon={<CalendarToday />} sx={{ py: 1.5, borderRadius: 2 }} onClick={() => setIsScheduleModalOpen(true)}>
+                  <Button variant="contained" fullWidth startIcon={<CalendarMonth />} sx={{ py: 1.5, borderRadius: 2 }} onClick={() => setIsScheduleModalOpen(true)}>
                     Manage Schedule
                   </Button>
                   <Button variant="outlined" fullWidth startIcon={<Edit />} onClick={() => navigate('/professional/profile')} sx={{ py: 1.5, borderRadius: 2 }}>Edit Profile</Button>
@@ -879,7 +882,7 @@ const ProfessionalDashboard = () => {
           />
         </DialogContent>
       </Dialog>
-      
+
     </Box>
   );
 };

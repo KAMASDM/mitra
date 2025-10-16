@@ -1,15 +1,15 @@
 // src/services/bookingService.js
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  getDoc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  orderBy, 
+import {
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
   limit,
   and,
   or,
@@ -23,7 +23,7 @@ import { db } from '../config/firebase';
 const BOOKINGS_COLLECTION = 'bookings';
 const AVAILABILITY_COLLECTION = 'availability';
 const PAYMENTS_COLLECTION = 'payments';
-const AVAILABILITY_SLOTS_COLLECTION = 'availabilitySlots'; 
+const AVAILABILITY_SLOTS_COLLECTION = 'availabilitySlots';
 // Create a new booking
 export const createBooking = async (bookingData) => {
   try {
@@ -33,9 +33,9 @@ export const createBooking = async (bookingData) => {
       createdAt: new Date(),
       updatedAt: new Date()
     };
-    
+
     const bookingRef = await addDoc(collection(db, BOOKINGS_COLLECTION), booking);
-    
+
     return { bookingId: bookingRef.id, success: true };
   } catch (error) {
     console.error('Error creating booking:', error);
@@ -49,11 +49,11 @@ export const getBookingById = async (bookingId) => {
   try {
     const bookingRef = doc(db, BOOKINGS_COLLECTION, bookingId);
     const bookingSnap = await getDoc(bookingRef);
-    
+
     if (bookingSnap.exists()) {
-      return { 
-        booking: { id: bookingSnap.id, ...bookingSnap.data() }, 
-        success: true 
+      return {
+        booking: { id: bookingSnap.id, ...bookingSnap.data() },
+        success: true
       };
     } else {
       return { error: 'Booking not found', success: false };
@@ -73,7 +73,7 @@ export const getUserBookings = async (userId, userType = 'client', status = null
       where(field, '==', userId),
       orderBy('appointmentDate', 'desc')
     );
-    
+
     if (status) {
       q = query(
         collection(db, BOOKINGS_COLLECTION),
@@ -84,19 +84,19 @@ export const getUserBookings = async (userId, userType = 'client', status = null
         orderBy('appointmentDate', 'desc')
       );
     }
-    
+
     const querySnapshot = await getDocs(q);
     const bookings = [];
-    
+
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      bookings.push({ 
-        id: doc.id, 
+      bookings.push({
+        id: doc.id,
         ...data,
         appointmentDate: data.appointmentDate?.toDate?.() || data.appointmentDate
       });
     });
-    
+
     return { bookings, success: true };
   } catch (error) {
     console.error('Error getting user bookings:', error);
@@ -113,7 +113,7 @@ export const updateBookingStatus = async (bookingId, status, additionalData = {}
       ...additionalData,
       updatedAt: new Date()
     });
-    
+
     return { success: true };
   } catch (error) {
     console.error('Error updating booking status:', error);
@@ -131,7 +131,7 @@ export const cancelBooking = async (bookingId, reason = '') => {
       cancelledAt: new Date(),
       updatedAt: new Date()
     });
-    
+
     return { success: true };
   } catch (error) {
     console.error('Error cancelling booking:', error);
@@ -150,7 +150,7 @@ export const rescheduleBooking = async (bookingId, newDate, newTime) => {
       rescheduledAt: new Date(),
       updatedAt: new Date()
     });
-    
+
     return { success: true };
   } catch (error) {
     console.error('Error rescheduling booking:', error);
@@ -165,7 +165,7 @@ export const rescheduleBooking = async (bookingId, newDate, newTime) => {
 //     const now = new Date();
 //     const futureDate = new Date();
 //     futureDate.setDate(now.getDate() + days);
-    
+
 //     const q = query(
 //       collection(db, BOOKINGS_COLLECTION),
 //       and(
@@ -179,10 +179,10 @@ export const rescheduleBooking = async (bookingId, newDate, newTime) => {
 //       ),
 //       orderBy('appointmentDate', 'asc')
 //     );
-    
+
 //     const querySnapshot = await getDocs(q);
 //     const bookings = [];
-    
+
 //     querySnapshot.forEach((doc) => {
 //       const data = doc.data();
 //       bookings.push({ 
@@ -191,7 +191,7 @@ export const rescheduleBooking = async (bookingId, newDate, newTime) => {
 //         appointmentDate: data.appointmentDate?.toDate?.() || data.appointmentDate
 //       });
 //     });
-    
+
 //     return { bookings, success: true };
 //   } catch (error) {
 //     console.error('Error getting upcoming bookings:', error);
@@ -203,7 +203,7 @@ export const getUpcomingBookings = async (userId, userType = 'client') => {
   try {
     const field = userType === 'client' ? 'clientId' : 'professionalId';
     const now = new Date();
-    
+
     const q = query(
       collection(db, BOOKINGS_COLLECTION),
       and(
@@ -216,19 +216,19 @@ export const getUpcomingBookings = async (userId, userType = 'client') => {
       ),
       orderBy('appointmentDate', 'asc')
     );
-    
+
     const querySnapshot = await getDocs(q);
     const bookings = [];
-    
+
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      bookings.push({ 
-        id: doc.id, 
+      bookings.push({
+        id: doc.id,
         ...data,
         appointmentDate: data.appointmentDate?.toDate?.() || data.appointmentDate
       });
     });
-    
+
     return { bookings, success: true };
   } catch (error) {
     console.error('Error getting upcoming bookings:', error);
@@ -244,7 +244,7 @@ export const getTodaysBookings = async (userId, userType = 'professional') => {
     const today = new Date();
     const startOfDay = new Date(today.setHours(0, 0, 0, 0));
     const endOfDay = new Date(today.setHours(23, 59, 59, 999));
-    
+
     const q = query(
       collection(db, BOOKINGS_COLLECTION),
       and(
@@ -254,19 +254,19 @@ export const getTodaysBookings = async (userId, userType = 'professional') => {
       ),
       orderBy('appointmentTime', 'asc')
     );
-    
+
     const querySnapshot = await getDocs(q);
     const bookings = [];
-    
+
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      bookings.push({ 
-        id: doc.id, 
+      bookings.push({
+        id: doc.id,
         ...data,
         appointmentDate: data.appointmentDate?.toDate?.() || data.appointmentDate
       });
     });
-    
+
     return { bookings, success: true };
   } catch (error) {
     console.error('Error getting today\'s bookings:', error);
@@ -285,14 +285,14 @@ export const getProfessionalAvailability = async (professionalId, date) => {
         where('available', '==', true)
       )
     );
-    
+
     const querySnapshot = await getDocs(q);
     const availability = [];
-    
+
     querySnapshot.forEach((doc) => {
       availability.push({ id: doc.id, ...doc.data() });
     });
-    
+
     return { availability, success: true };
   } catch (error) {
     console.error('Error getting professional availability:', error);
@@ -309,7 +309,7 @@ export const updateProfessionalAvailability = async (professionalId, availabilit
       createdAt: new Date(),
       updatedAt: new Date()
     });
-    
+
     return { availabilityId: availabilityRef.id, success: true };
   } catch (error) {
     console.error('Error updating professional availability:', error);
@@ -328,15 +328,15 @@ export const processPayment = async (bookingId, paymentData) => {
       processedAt: new Date(),
       createdAt: new Date()
     };
-    
+
     const paymentRef = await addDoc(collection(db, PAYMENTS_COLLECTION), payment);
-    
+
     // Update booking status to confirmed
     await updateBookingStatus(bookingId, 'confirmed', {
       paymentId: paymentRef.id,
       paymentStatus: 'completed'
     });
-    
+
     return { paymentId: paymentRef.id, success: true };
   } catch (error) {
     console.error('Error processing payment:', error);
@@ -348,11 +348,11 @@ export const processPayment = async (bookingId, paymentData) => {
 export const getBookingStatistics = async (userId, userType = 'professional', period = 'month') => {
   try {
     const field = userType === 'client' ? 'clientId' : 'professionalId';
-    
+
     // Calculate date range based on period
     const now = new Date();
     let startDate = new Date();
-    
+
     switch (period) {
       case 'week':
         startDate.setDate(now.getDate() - 7);
@@ -366,7 +366,7 @@ export const getBookingStatistics = async (userId, userType = 'professional', pe
       default:
         startDate.setMonth(now.getMonth() - 1);
     }
-    
+
     const q = query(
       collection(db, BOOKINGS_COLLECTION),
       and(
@@ -374,18 +374,18 @@ export const getBookingStatistics = async (userId, userType = 'professional', pe
         where('createdAt', '>=', Timestamp.fromDate(startDate))
       )
     );
-    
+
     const querySnapshot = await getDocs(q);
-    
+
     let totalBookings = 0;
     let completedBookings = 0;
     let cancelledBookings = 0;
     let totalEarnings = 0;
-    
+
     querySnapshot.forEach((doc) => {
       const data = doc.data();
       totalBookings++;
-      
+
       if (data.status === 'completed') {
         completedBookings++;
         totalEarnings += data.amount || 0;
@@ -393,7 +393,7 @@ export const getBookingStatistics = async (userId, userType = 'professional', pe
         cancelledBookings++;
       }
     });
-    
+
     const statistics = {
       totalBookings,
       completedBookings,
@@ -404,7 +404,7 @@ export const getBookingStatistics = async (userId, userType = 'professional', pe
       completionRate: totalBookings > 0 ? (completedBookings / totalBookings) * 100 : 0,
       cancellationRate: totalBookings > 0 ? (cancelledBookings / totalBookings) * 100 : 0
     };
-    
+
     return { statistics, success: true };
   } catch (error) {
     console.error('Error getting booking statistics:', error);
@@ -416,49 +416,49 @@ export const getBookingStatistics = async (userId, userType = 'professional', pe
 export const searchBookings = async (searchParams) => {
   try {
     let q = collection(db, BOOKINGS_COLLECTION);
-    
+
     // Build query based on search parameters
     const conditions = [];
-    
+
     if (searchParams.clientId) {
       conditions.push(where('clientId', '==', searchParams.clientId));
     }
-    
+
     if (searchParams.professionalId) {
       conditions.push(where('professionalId', '==', searchParams.professionalId));
     }
-    
+
     if (searchParams.status) {
       conditions.push(where('status', '==', searchParams.status));
     }
-    
+
     if (searchParams.dateFrom && searchParams.dateTo) {
       conditions.push(where('appointmentDate', '>=', Timestamp.fromDate(new Date(searchParams.dateFrom))));
       conditions.push(where('appointmentDate', '<=', Timestamp.fromDate(new Date(searchParams.dateTo))));
     }
-    
+
     if (conditions.length > 0) {
       q = query(q, and(...conditions), orderBy('appointmentDate', 'desc'));
     } else {
       q = query(q, orderBy('appointmentDate', 'desc'));
     }
-    
+
     if (searchParams.limit) {
       q = query(q, limit(searchParams.limit));
     }
-    
+
     const querySnapshot = await getDocs(q);
     const bookings = [];
-    
+
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      bookings.push({ 
-        id: doc.id, 
+      bookings.push({
+        id: doc.id,
         ...data,
         appointmentDate: data.appointmentDate?.toDate?.() || data.appointmentDate
       });
     });
-    
+
     return { bookings, success: true };
   } catch (error) {
     console.error('Error searching bookings:', error);
@@ -477,7 +477,7 @@ export const createAvailabilitySlot = async (slotData) => {
     const docRef = await addDoc(collection(db, 'availabilitySlots'), slotPayload);
     console.log("Successfully saved event to Firestore with ID:", docRef.id);
     return { success: true, id: docRef.id };
-    
+
   } catch (error) {
     console.error("Error creating availability slot:", error);
     return { success: false, error: error.message };
@@ -618,7 +618,7 @@ export const createBookingWithClientDetails = async (bookingData, clientInfo) =>
       status: 'pending',
       amount: bookingData.amount || 0,
       notes: bookingData.notes || '',
-      
+
       // Client details
       clientName: clientInfo.name || user.user.name || `${user.user.first_name || ''} ${user.user.last_name || ''}`.trim(),
       clientEmail: clientInfo.email || user.user.email,
@@ -626,14 +626,14 @@ export const createBookingWithClientDetails = async (bookingData, clientInfo) =>
       clientAge: clientInfo.age || '',
       clientGender: clientInfo.gender || '',
       reasonForBooking: clientInfo.reasonForBooking || '',
-      
+
       // Timestamps
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now()
     };
-    
+
     const bookingRef = await addDoc(collection(db, BOOKINGS_COLLECTION), booking);
-    
+
     // Mark the availability slot as booked if slotId is provided
     if (bookingData.slotId) {
       const slotRef = doc(db, 'availabilitySlots', bookingData.slotId);
@@ -644,7 +644,7 @@ export const createBookingWithClientDetails = async (bookingData, clientInfo) =>
         updated_at: Timestamp.now()
       });
     }
-    
+
     return { success: true, bookingId: bookingRef.id };
   } catch (error) {
     console.error('Error creating booking with client details:', error);
@@ -728,7 +728,7 @@ export const getProfessionalBookingsWithClientDetails = async (professionalId) =
 export const subscribeToProfessionalBookings = (professionalId, callback) => {
   if (!professionalId) {
     console.error('Professional ID is required for subscription');
-    return () => {}; // Return an empty unsubscribe function
+    return () => { }; // Return an empty unsubscribe function
   }
   try {
     const bookingsQuery = query(
@@ -757,7 +757,7 @@ export const subscribeToProfessionalBookings = (professionalId, callback) => {
     return unsubscribe; // Return the function to stop the listener
   } catch (error) {
     console.error('Error setting up bookings subscription:', error);
-    return () => {};
+    return () => { };
   }
 };
 
@@ -765,7 +765,7 @@ export const subscribeToProfessionalBookings = (professionalId, callback) => {
 export const subscribeToClientBookings = (clientId, callback) => {
   if (!clientId) {
     console.error('Client ID is required for subscription');
-    return () => {}; // Return empty unsubscribe function
+    return () => { }; // Return empty unsubscribe function
   }
 
   try {
@@ -796,7 +796,7 @@ export const subscribeToClientBookings = (clientId, callback) => {
     return unsubscribe;
   } catch (error) {
     console.error('Error setting up bookings subscription:', error);
-    return () => {}; // Return empty unsubscribe function
+    return () => { }; // Return empty unsubscribe function
   }
 };
 
@@ -804,7 +804,7 @@ export const subscribeToClientBookings = (clientId, callback) => {
 export const subscribeToAvailabilitySlots = (professionalId, callback) => {
   if (!professionalId) {
     console.error('Professional ID is required for subscription');
-    return () => {}; // Return empty unsubscribe function
+    return () => { }; // Return empty unsubscribe function
   }
 
   try {
@@ -838,7 +838,7 @@ export const subscribeToAvailabilitySlots = (professionalId, callback) => {
     return unsubscribe;
   } catch (error) {
     console.error('Error setting up availability slots subscription:', error);
-    return () => {}; // Return empty unsubscribe function
+    return () => { }; // Return empty unsubscribe function
   }
 };
 
@@ -857,7 +857,7 @@ export const createBookingFromSlot = async (slot, professionalId, clientData) =>
       appointmentTime: slot.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       duration: Math.round((slot.end - slot.start) / 60000), // duration in minutes
       status: 'pending', // Professionals will need to confirm
-      notes: `Booked from available slot: "${slot.title}"`,
+      notes: `Booked from available slot: ${slot.title}`,
       sessionType: 'video_call', // Default or can be made selectable
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
@@ -868,7 +868,7 @@ export const createBookingFromSlot = async (slot, professionalId, clientData) =>
     // 2. Mark the availability slot as booked
     // This line will now work because AVAILABILITY_SLOTS_COLLECTION is defined
     const slotRef = doc(db, AVAILABILITY_SLOTS_COLLECTION, slot.id);
-    batch.update(slotRef, { 
+    batch.update(slotRef, {
       is_booked: true,
       booking_id: bookingRef.id,
       booked_by_uid: clientData.id,

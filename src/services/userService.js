@@ -4,18 +4,19 @@ import {
   doc,
   getDocs,
   getDoc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
+  // addDoc,
+  // updateDoc,
+  // deleteDoc,
   query,
   where,
   orderBy,
   limit,
   startAfter,
-  onSnapshot,
-  getCountFromServer,
-  runTransaction,
-  Timestamp
+  // onSnapshot,
+  // getCountFromServer,
+  // runTransaction,
+  Timestamp,
+  writeBatch
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../config/firebase';
@@ -308,5 +309,58 @@ export const getUserStatistics = async (userId, userType) => {
   } catch (error) {
     console.error('Error getting user statistics:', error);
     return { error: error.message, success: false };
+  }
+};
+
+export const getProfessionalProfileByUserId = async (userId) => {
+  try {
+    const q = query(collection(db, 'professionals'), where('user_id', '==', userId), limit(1));
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
+      // This can happen if a professional user was created but their professional profile wasn't.
+      return { success: false, error: 'Professional profile not found.' };
+    }
+    const professionalDoc = querySnapshot.docs[0];
+    return { success: true, profile: { id: professionalDoc.id, ...professionalDoc.data() } };
+  } catch (error) {
+    console.error('Error fetching professional profile:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+export const updateProfessionalProfile = async (userId, professionalId, data) => {
+  try {
+    const batch = writeBatch(db);
+
+    const userRef = doc(db, 'users', userId);
+    const userData = {
+      displayName: `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+      phone: data.phone,
+      ...(data.photoURL && { photoURL: data.photoURL })
+    };
+    batch.update(userRef, userData);
+
+    const professionalRef = doc(db, 'professionals', professionalId);
+    const professionalData = {
+      first_name: data.firstName || '',
+      last_name: data.lastName || '',
+      profession: data.profession || '',
+      specialization: data.specialization || '',
+      years_of_experience: data.experience || 0,
+      location: data.location || '',
+      hourly_rate: data.sessionRate || 0,
+      biography: data.biography || '',
+      educational_qualification: (data.qualifications || []).join(', '),
+      languages_spoken: (data.languages || []).join(', '),
+      updated_at: Timestamp.now(),
+      ...(data.profile_picture && { profile_picture: data.profile_picture })
+    };
+    batch.update(professionalRef, professionalData);
+
+    await batch.commit();
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating professional profile:", error);
+    return { success: false, error: error.message };
   }
 };

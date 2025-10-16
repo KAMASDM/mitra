@@ -36,7 +36,8 @@ import {
   List,
   ListItem,
   ListItemAvatar,
-  ListItemText
+  ListItemText,
+  alpha
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -49,7 +50,7 @@ import {
   createAvailabilitySlot,
   updateAvailabilitySlot
 } from '../../services/bookingService';
-import { Visibility, Close as CloseIcon, Search as SearchIcon, ChevronLeft, ChevronRight, CalendarMonth, Edit as EditIcon, CalendarToday } from '@mui/icons-material';
+import { Visibility, Close as CloseIcon, Search as SearchIcon, ChevronLeft, ChevronRight, CalendarMonth, Edit as EditIcon, } from '@mui/icons-material';
 import { Timestamp } from 'firebase/firestore';
 
 
@@ -85,7 +86,7 @@ export const ScheduleManagementView = ({ professional, user, isEditable }) => {
         setLoadingEvents(true);
         const result = await getAvailabilityForProfessional(professional.id);
         if (result.success) {
-          setEvents(result.slots.map(slot => ({ ...slot, is_booked: slot.isBooked || false })));
+          setEvents(result.slots.map(slot => ({ ...slot, is_booked: slot.is_booked || false })));
         } else {
           setEventError("Could not load schedule for this professional.");
         }
@@ -243,7 +244,7 @@ export const ScheduleManagementView = ({ professional, user, isEditable }) => {
               }}>
               <Typography variant="body2" sx={{ fontWeight: isSelected || isToday ? 'medium' : 'normal' }}>{day}</Typography>
             </IconButton>
-            {hasEvent && <Box sx={{ position: 'absolute', bottom: 4, left: '50%', transform: 'translateX(-50%)', width: 5, height: 5, borderRadius: '50%', bgcolor: isSelected ? 'white' : 'primary.main' }} />}
+            {hasEvent && <Box sx={{ position: 'absolute', bottom: 4, left: '50%', transform: 'translateX(-50%)', width: 5, height: 5, borderRadius: '50%', bgcolor: isSelected ? 'wh' : 'green' }} />}
           </Box>
         </Grid>
       );
@@ -356,11 +357,12 @@ export const ScheduleManagementView = ({ professional, user, isEditable }) => {
                   key={event.id}
                   variant="outlined"
                   sx={{
-                    p: 1.5,
-                    borderRadius: 2,
+                    p: 1,
+                    borderRadius: 1,
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
+                    textTransform: 'capitalize',
                     opacity: event.is_booked ? 0.6 : 1,
                     cursor: isEditable || event.is_booked ? 'default' : 'pointer',
                     '&:hover': {
@@ -413,12 +415,12 @@ export const ScheduleManagementView = ({ professional, user, isEditable }) => {
                   return (
                     <Box
                       key={event.id}
-                      onClick={() => handleOpenEditModal(event)} // <-- FIX: ADDED ONCLICK
+                      onClick={() => handleOpenEditModal(event)}
                       sx={{
                         position: 'absolute', top: `${top}px`, left: '10px', right: '10px', height: `${height}px`,
                         bgcolor: event.is_booked ? 'grey.400' : 'primary.main',
                         color: 'primary.contrastText', borderRadius: 1, p: 1,
-                        cursor: isEditable ? 'pointer' : 'default', // <-- FIX: ADDED CURSOR
+                        cursor: isEditable ? 'pointer' : 'default',
                         opacity: event.is_booked ? 0.7 : 1,
                       }}
                     >
@@ -518,6 +520,15 @@ const ClientDashboard = () => {
     setPage(0);
   };
 
+  const handleViewAppointment = (appt) => {
+    const professional = professionalDetails[appt.professionalId];
+    if (professional) {
+      handleOpenModal(professional);
+    } else {
+      console.error("Could not find details for professional ID:", appt.professionalId);
+    }
+  };
+
   useEffect(() => {
     const fetchDashboardData = async () => {
       if (!user?.user?.id) {
@@ -600,7 +611,7 @@ const ClientDashboard = () => {
         {/* Stat Cards */}
         <Grid container spacing={3} sx={{ mb: 2 }}>
           {/* Progress Card */}
-          <Grid item size={{xs:12, sm:6, md:3}}>
+          <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
             <MotionCard sx={{
               p: 3,
               borderRadius: 3,
@@ -623,7 +634,7 @@ const ClientDashboard = () => {
           </Grid>
 
           {/* Find Professional Card */}
-          <Grid item size={{xs:12, sm:6, md:3}}>
+          <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
             <MotionCard
               sx={{
                 p: 3,
@@ -641,29 +652,66 @@ const ClientDashboard = () => {
           </Grid>
 
           {/* Upcoming Appointments Card */}
-          <Grid item size={{xs:12, sm:6, md:3}}>
-            <MotionCard sx={{ borderRadius: 3, height: '100%', p: 3, display: 'flex', flexDirection: 'column' }}>
+          <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
+            <MotionCard sx={{ borderRadius: 3, height: '100%', p: 2.5, display: 'flex', flexDirection: 'column' }}>
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, flexShrink: 0 }}>
                 Upcoming Appointments
               </Typography>
               {upcomingAppointments.length > 0 ? (
-                <Stack spacing={2} sx={{ overflowY: 'auto', flexGrow: 1, pr: 1, maxHeight: 180 }}>
+                <Stack
+                  spacing={2}
+                  sx={{
+                    overflowY: 'auto',
+                    flexGrow: 1,
+                    pr: 1,
+                    maxHeight: 180,
+                    '&::-webkit-scrollbar': {
+                      width: '6px',
+                    },
+                    '&::-webkit-scrollbar-track': {
+                      background: 'transparent',
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      backgroundColor: alpha(theme.palette.primary.main, 0.5),
+                      borderRadius: '10px',
+                    },
+                    '&::-webkit-scrollbar-thumb:hover': {
+                      backgroundColor: alpha(theme.palette.primary.main, 0.8)
+                    },
+                  }}
+                >
                   {upcomingAppointments.map((appt) => {
                     const professional = professionalDetails[appt.professionalId];
-                    const professionalName = professional
-                      ? `${professional.first_name || ''} ${professional.last_name || ''}`.trim()
-                      : 'Loading...';
+                    const professionalName = professional ? `${professional.first_name || ''} ${professional.last_name || ''}`.trim() : 'Loading...';
 
                     return (
-                      <Paper key={appt.id} variant="outlined" sx={{ p: 2, borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-                        <Box>
+                      <Paper
+                        key={appt.id}
+                        variant="outlined"
+                        sx={{
+                          p: 2,
+                          borderRadius: 2.5,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 2,
+                          transition: 'all 0.2s ease-in-out',
+                          '&:hover': {
+                            borderColor: 'primary.main',
+                          }
+                        }}
+                      >
+                        <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+                          {professional?.first_name?.charAt(0) || 'P'}
+                        </Avatar>
+                        <Box sx={{ flexGrow: 1 }}>
                           <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>{professionalName}</Typography>
                           <Typography variant="body2" color="text.secondary">
-                            {new Date(appt.appointmentDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            {new Date(appt.appointmentDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} {appt.appointmentTime}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary">{appt.appointmentTime}</Typography>
                         </Box>
-                        <Button variant="outlined" size="small">View</Button>
+                        <IconButton size="small" onClick={() => handleViewAppointment(appt)} sx={{ border: `1px solid ${theme.palette.divider}` }}>
+                          <ChevronRight />
+                        </IconButton>
                       </Paper>
                     );
                   })}
@@ -677,7 +725,7 @@ const ClientDashboard = () => {
           </Grid>
 
           {/* Recent Sessions Card */}
-          <Grid item size={{xs:12, sm:6, md:3}}>
+          <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
             <MotionCard
               sx={{
                 borderRadius: 3,

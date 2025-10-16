@@ -1,5 +1,5 @@
 // src/pages/Profiles/ProfessionalProfile.jsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Container,
@@ -12,22 +12,23 @@ import {
   Avatar,
   Stack,
   IconButton,
-  Divider,
+  // Divider,
   Chip,
   Alert,
-  Paper,
+  // Paper,
   useTheme,
-  alpha,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Switch,
-  FormControlLabel,
+  // alpha,
+  // FormControl,
+  // InputLabel,
+  // Select,
+  // MenuItem,
+  // Switch,
+  // FormControlLabel,
   List,
   ListItem,
   ListItemText,
   ListItemSecondaryAction,
+  CircularProgress,
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import {
@@ -35,137 +36,187 @@ import {
   Save,
   Cancel,
   PhotoCamera,
-  Lock,
-  Notifications,
-  Security,
-  Delete,
+  // Lock,
+  // Notifications,
+  // Security,
+  // Delete,
   Add,
   Remove,
-  Star,
-  Schedule,
-  AttachMoney,
+  // Star,
+  // Schedule,
+  // AttachMoney,
   Verified,
+  CurrencyRupee,
 } from '@mui/icons-material';
+import { getCurrentUserProfile, updateUserProfile } from '../../services/authService';
+import { getProfessionalProfileByUserId, updateProfessionalProfile, getUserStatistics } from '../../services/userService';
+import { uploadProfilePicture } from '../../services/userService';
 
 const MotionCard = motion(Card);
 
 const ProfessionalProfile = () => {
   const theme = useTheme();
-  const user = JSON.parse(localStorage.getItem('loginInfo'));
-  
+  const loggedInUser = JSON.parse(localStorage.getItem('loginInfo'));
+
   const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState({
-    firstName: 'Dr. Priya',
-    lastName: 'Sharma',
-    email: 'priya.sharma@email.com',
-    phone: '+91 9876543210',
-    profession: 'Clinical Psychologist',
-    specialization: 'LGBTQ+ Counseling, Anxiety, Depression',
-    experience: '8',
-    location: 'Mumbai, Maharashtra',
-    qualifications: ['PhD in Clinical Psychology', 'Licensed Clinical Psychologist', 'LGBTQ+ Affirmative Therapy Certification'],
-    languages: ['English', 'Hindi', 'Marathi'],
-    sessionRate: '2000',
-    about: 'Specialized in LGBTQ+ affirmative therapy with 8+ years of experience helping individuals navigate identity, relationships, and mental health challenges. I provide a safe, non-judgmental space for all clients.',
-    availability: {
-      monday: { enabled: true, slots: ['9:00 AM - 12:00 PM', '2:00 PM - 5:00 PM'] },
-      tuesday: { enabled: true, slots: ['9:00 AM - 12:00 PM', '2:00 PM - 5:00 PM'] },
-      wednesday: { enabled: true, slots: ['9:00 AM - 12:00 PM'] },
-      thursday: { enabled: true, slots: ['9:00 AM - 12:00 PM', '2:00 PM - 5:00 PM'] },
-      friday: { enabled: true, slots: ['9:00 AM - 12:00 PM', '2:00 PM - 5:00 PM'] },
-      saturday: { enabled: false, slots: [] },
-      sunday: { enabled: false, slots: [] },
-    },
-  });
-
-  const [preferences, setPreferences] = useState({
-    emailNotifications: true,
-    smsNotifications: false,
-    appointmentReminders: true,
-    clientReviews: true,
-    profileVisibility: 'public',
-    autoAcceptBookings: false,
-  });
-
+  const [profileData, setProfileData] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
+  const [initialProfileData, setInitialProfileData] = useState(null);
+  // State for image upload
+  const [profileImageFile, setProfileImageFile] = useState(null);
+  const [profileImageUrl, setProfileImageUrl] = useState('');
   const [newQualification, setNewQualification] = useState('');
   const [newLanguage, setNewLanguage] = useState('');
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
 
-  const handleProfileChange = (e) => {
-    setProfileData({
-      ...profileData,
-      [e.target.name]: e.target.value,
-    });
+
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!loggedInUser?.user?.id) {
+        showNotification("User not authenticated. Please log in.", "error");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+
+        const [userRes, professionalRes, statsRes] = await Promise.all([
+          getCurrentUserProfile(loggedInUser.user.id),
+          getProfessionalProfileByUserId(loggedInUser.user.id),
+          getUserStatistics(loggedInUser.user.id, 'PROFESSIONAL'),
+        ]);
+
+        if (userRes.success && professionalRes.success) {
+          const userData = userRes.userData;
+          const profData = professionalRes.profile;
+
+          const combinedData = {
+            professionalId: profData.id,
+            firstName: profData.first_name || '',
+            lastName: profData.last_name || '',
+            email: userData.email || '',
+            phone: profData.phone || userData.phone || '',
+            profession: profData.profession || 'Not specified',
+            specialization: profData.specialization || '',
+            experience: profData.years_of_experience || '0',
+            location: profData.address || profData.location || '',
+            qualifications: profData.educational_qualification ? profData.educational_qualification.split(',').map(q => q.trim()) : [],
+            languages: profData.languages_spoken ? profData.languages_spoken.split(',').map(l => l.trim()) : [],
+            sessionRate: profData.hourly_rate || '0',
+            biography: profData.biography || '',
+            photoURL: userData.photoURL || '',
+          };
+          setProfileData(combinedData);
+          setInitialProfileData(combinedData);
+          setProfileImageUrl(userRes.userData.photoURL || '');
+        } else {
+          showNotification("Could not load full profile. Please try again.", "error");
+        }
+
+        if (statsRes.success) {
+          setStats(statsRes.stats);
+        }
+
+      } catch (error) {
+        showNotification("An error occurred while fetching your profile.", "error");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [loggedInUser?.user?.id]);
+
+  const showNotification = (message, severity = 'success') => {
+    setNotification({ open: true, message, severity });
   };
 
-  const handlePreferenceChange = (e) => {
-    const { name, checked, value } = e.target;
-    setPreferences({
-      ...preferences,
-      [name]: e.target.type === 'checkbox' ? checked : value,
-    });
+  const handleProfileChange = (e) => {
+    setProfileData({ ...profileData, [e.target.name]: e.target.value });
+  };
+
+  const handleImageChange = (e) => {
+    if (e.target.files[0]) {
+      const file = e.target.files[0];
+      setProfileImageFile(file);
+      setProfileImageUrl(URL.createObjectURL(file));
+    }
   };
 
   const addQualification = () => {
     if (newQualification.trim()) {
-      setProfileData({
-        ...profileData,
-        qualifications: [...profileData.qualifications, newQualification.trim()],
-      });
+      setProfileData({ ...profileData, qualifications: [...profileData.qualifications, newQualification.trim()] });
       setNewQualification('');
     }
   };
-
   const removeQualification = (index) => {
-    setProfileData({
-      ...profileData,
-      qualifications: profileData.qualifications.filter((_, i) => i !== index),
-    });
+    setProfileData({ ...profileData, qualifications: profileData.qualifications.filter((_, i) => i !== index) });
   };
-
   const addLanguage = () => {
     if (newLanguage.trim() && !profileData.languages.includes(newLanguage.trim())) {
-      setProfileData({
-        ...profileData,
-        languages: [...profileData.languages, newLanguage.trim()],
-      });
+      setProfileData({ ...profileData, languages: [...profileData.languages, newLanguage.trim()] });
       setNewLanguage('');
     }
   };
-
   const removeLanguage = (index) => {
-    setProfileData({
-      ...profileData,
-      languages: profileData.languages.filter((_, i) => i !== index),
-    });
+    setProfileData({ ...profileData, languages: profileData.languages.filter((_, i) => i !== index) });
   };
 
   const handleSave = async () => {
+    setSaveLoading(true);
+    let updatedProfile = { ...profileData };
+
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setSuccess(true);
-      setIsEditing(false);
-      setError('');
-      
-      setTimeout(() => setSuccess(false), 3000);
+      if (profileImageFile) {
+        const uploadResult = await uploadProfilePicture(loggedInUser.user.id, profileImageFile);
+        if (uploadResult.success) {
+          updatedProfile.photoURL = uploadResult.photoURL;
+          updatedProfile.profile_picture = uploadResult.photoURL;
+        } else {
+          throw new Error('Image upload failed.');
+        }
+      }
+
+      const result = await updateProfessionalProfile(loggedInUser.user.id, updatedProfile.professionalId, updatedProfile);
+
+      if (result.success) {
+        showNotification('Profile updated successfully!');
+        setIsEditing(false);
+        setInitialProfileData(updatedProfile);
+        setProfileImageFile(null); // Clear the file after successful upload
+      } else {
+        throw new Error(result.error || 'Failed to update profile.');
+      }
     } catch (err) {
-      setError('Failed to update profile. Please try again.');
+      showNotification(err.message, 'error');
+    } finally {
+      setSaveLoading(false);
     }
   };
 
   const handleCancel = () => {
     setIsEditing(false);
-    setError('');
+    // Optionally refetch data to discard changes
   };
 
-  const profileStats = [
-    { label: 'Total Sessions', value: '156', color: '#9D84B7' },
-    { label: 'Average Rating', value: '4.9', color: '#F4A259' },
-    { label: 'Response Rate', value: '98%', color: '#4DAA57' },
-    { label: 'Monthly Earnings', value: '₹1,85,000', color: '#5899E2' },
-  ];
+  if (loading) {
+    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}><CircularProgress /></Box>;
+  }
+
+  if (!profileData) {
+    return <Container sx={{ py: 8 }}><Alert severity="error">Could not load profile data.</Alert></Container>;
+  }
+
+  // const profileStats = [
+  //   { label: 'Total Sessions', value: '156', color: '#9D84B7' },
+  //   { label: 'Average Rating', value: '4.9', color: '#F4A259' },
+  //   { label: 'Response Rate', value: '98%', color: '#4DAA57' },
+  //   { label: 'Monthly Earnings', value: '₹1,85,000', color: '#5899E2' },
+  // ];
 
   return (
     <Box sx={{ py: 4, bgcolor: 'background.default', minHeight: '100vh' }}>
@@ -194,7 +245,7 @@ const ProfessionalProfile = () => {
           </Typography>
         </Box>
 
-        {success && (
+        {/* {success && (
           <Alert severity="success" sx={{ mb: 3 }}>
             Profile updated successfully!
           </Alert>
@@ -204,7 +255,7 @@ const ProfessionalProfile = () => {
           <Alert severity="error" sx={{ mb: 3 }}>
             {error}
           </Alert>
-        )}
+        )} */}
 
         <Grid container spacing={4}>
           {/* Profile Information */}
@@ -240,7 +291,7 @@ const ProfessionalProfile = () => {
                         fontSize: '3rem',
                       }}
                     >
-                      {profileData.firstName.charAt(0)}
+                      {profileData.firstName?.charAt(0)}
                     </Avatar>
                     {isEditing && (
                       <IconButton
@@ -268,19 +319,19 @@ const ProfessionalProfile = () => {
                       {profileData.profession}
                     </Typography>
                     <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                      {profileData.experience} years experience • Verified Professional
+                      {profileData.experience + ' Years Exp' + (profileData.verification_status ? ' • Verified Professional' : ' • Not Verified')}
                     </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                    {/* <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
                       <Star sx={{ color: 'warning.main', fontSize: '1.2rem' }} />
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
                         4.9 (156 reviews)
                       </Typography>
-                    </Box>
+                    </Box> */}
                   </Box>
                 </Box>
 
                 <Grid container spacing={3}>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item size={{ xs: 12, sm: 6 }}>
                     <TextField
                       fullWidth
                       name="firstName"
@@ -290,7 +341,7 @@ const ProfessionalProfile = () => {
                       disabled={!isEditing}
                     />
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item size={{ xs: 12, sm: 6 }}>
                     <TextField
                       fullWidth
                       name="lastName"
@@ -300,7 +351,7 @@ const ProfessionalProfile = () => {
                       disabled={!isEditing}
                     />
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item size={{ xs: 12, sm: 6 }}>
                     <TextField
                       fullWidth
                       name="email"
@@ -311,7 +362,7 @@ const ProfessionalProfile = () => {
                       disabled={!isEditing}
                     />
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item size={{ xs: 12, sm: 6 }}>
                     <TextField
                       fullWidth
                       name="phone"
@@ -321,7 +372,7 @@ const ProfessionalProfile = () => {
                       disabled={!isEditing}
                     />
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item size={{ xs: 12, sm: 6 }}>
                     <TextField
                       fullWidth
                       name="profession"
@@ -331,7 +382,7 @@ const ProfessionalProfile = () => {
                       disabled={!isEditing}
                     />
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item size={{ xs: 12, sm: 6 }}>
                     <TextField
                       fullWidth
                       name="experience"
@@ -342,7 +393,31 @@ const ProfessionalProfile = () => {
                       disabled={!isEditing}
                     />
                   </Grid>
-                  <Grid item xs={12}>
+                  <Grid item size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      name="location"
+                      label="Location"
+                      value={profileData.location}
+                      onChange={handleProfileChange}
+                      disabled={!isEditing}
+                    />
+                  </Grid>
+                  <Grid item size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      name="sessionRate"
+                      label="Session Rate (₹)"
+                      type="number"
+                      value={profileData.sessionRate}
+                      onChange={handleProfileChange}
+                      disabled={!isEditing}
+                      InputProps={{
+                        startAdornment: <CurrencyRupee sx={{ color: 'text.secondary', mr: 1, fontSize: 'small' }} />,
+                      }}
+                    />
+                  </Grid>
+                  <Grid item size={{ xs: 12, sm: 6 }}>
                     <TextField
                       fullWidth
                       name="specialization"
@@ -354,144 +429,58 @@ const ProfessionalProfile = () => {
                       rows={2}
                     />
                   </Grid>
-                  <Grid item xs={12}>
+                  <Grid item size={{ xs: 12, sm: 6 }}>
                     <TextField
                       fullWidth
-                      name="location"
-                      label="Location"
-                      value={profileData.location}
-                      onChange={handleProfileChange}
-                      disabled={!isEditing}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      name="sessionRate"
-                      label="Session Rate (₹)"
-                      type="number"
-                      value={profileData.sessionRate}
-                      onChange={handleProfileChange}
-                      disabled={!isEditing}
-                      InputProps={{
-                        startAdornment: <AttachMoney sx={{ color: 'text.secondary', mr: 1 }} />,
-                      }}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      name="about"
-                      label="About Me"
-                      value={profileData.about}
+                      name="biography"
+                      label="Biography"
+                      value={profileData.biography}
                       onChange={handleProfileChange}
                       disabled={!isEditing}
                       multiline
-                      rows={4}
+                      rows={2}
                     />
                   </Grid>
 
                   {/* Qualifications */}
-                  <Grid item xs={12}>
-                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                      Qualifications & Certifications
-                    </Typography>
-                    <List>
-                      {profileData.qualifications.map((qualification, index) => (
-                        <ListItem key={index} sx={{ px: 0 }}>
-                          <ListItemText primary={qualification} />
-                          {isEditing && (
-                            <ListItemSecondaryAction>
-                              <IconButton
-                                edge="end"
-                                onClick={() => removeQualification(index)}
-                                color="error"
-                              >
-                                <Remove />
-                              </IconButton>
-                            </ListItemSecondaryAction>
-                          )}
+                  <Grid item size={{ xs: 12, sm: 6 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>Qualifications</Typography>
+                    <List dense>
+                      {(profileData?.qualifications || []).map((q, index) => (
+                        <ListItem key={index} disablePadding>
+                          <ListItemText primary={`• ${q}`} />
+                          {isEditing && <ListItemSecondaryAction><IconButton edge="end" color="error" onClick={() => removeQualification(index)}><Remove /></IconButton></ListItemSecondaryAction>}
                         </ListItem>
                       ))}
                     </List>
-                    {isEditing && (
-                      <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-                        <TextField
-                          fullWidth
-                          value={newQualification}
-                          onChange={(e) => setNewQualification(e.target.value)}
-                          placeholder="Add new qualification"
-                          size="small"
-                        />
-                        <Button
-                          variant="outlined"
-                          startIcon={<Add />}
-                          onClick={addQualification}
-                        >
-                          Add
-                        </Button>
-                      </Box>
-                    )}
+                    {isEditing && <Box sx={{ display: 'flex', gap: 1, mt: 1 }}><TextField fullWidth value={newQualification} onChange={(e) => setNewQualification(e.target.value)} placeholder="Add new qualification" size="small" /><Button variant="outlined" startIcon={<Add />} onClick={addQualification}>Add</Button></Box>}
                   </Grid>
 
                   {/* Languages */}
-                  <Grid item xs={12}>
-                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                      Languages
-                    </Typography>
+                  <Grid item size={{ xs: 12, sm: 6 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>Languages</Typography>
                     <Stack direction="row" spacing={1} flexWrap="wrap">
-                      {profileData.languages.map((language, index) => (
-                        <Chip
-                          key={index}
-                          label={language}
-                          onDelete={isEditing ? () => removeLanguage(index) : undefined}
-                          color="primary"
-                          sx={{ mb: 1 }}
-                        />
+                      {(profileData?.languages || []).map((lang, index) => (
+                        <Chip key={index} label={lang} onDelete={isEditing ? () => removeLanguage(index) : undefined} color="primary" sx={{ mb: 1 }} />
                       ))}
                     </Stack>
-                    {isEditing && (
-                      <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-                        <TextField
-                          value={newLanguage}
-                          onChange={(e) => setNewLanguage(e.target.value)}
-                          placeholder="Add new language"
-                          size="small"
-                        />
-                        <Button
-                          variant="outlined"
-                          startIcon={<Add />}
-                          onClick={addLanguage}
-                        >
-                          Add
-                        </Button>
-                      </Box>
-                    )}
+                    {isEditing && <Box sx={{ display: 'flex', gap: 1, mt: 1 }}><TextField value={newLanguage} onChange={(e) => setNewLanguage(e.target.value)} placeholder="Add new language" size="small" /><Button variant="outlined" startIcon={<Add />} onClick={addLanguage}>Add</Button></Box>}
                   </Grid>
                 </Grid>
 
                 {isEditing && (
                   <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
-                    <Button
-                      variant="contained"
-                      startIcon={<Save />}
-                      onClick={handleSave}
-                    >
-                      Save Changes
+                    <Button variant="contained" startIcon={<Save />} onClick={handleSave} disabled={saveLoading}>
+                      {saveLoading ? <CircularProgress size={24} color="inherit" /> : 'Save Changes'}
                     </Button>
-                    <Button
-                      variant="outlined"
-                      onClick={handleCancel}
-                    >
-                      Cancel
-                    </Button>
+                    <Button variant="outlined" onClick={handleCancel}>Cancel</Button>
                   </Box>
                 )}
               </CardContent>
             </MotionCard>
 
             {/* Professional Settings */}
-            <MotionCard
+            {/* <MotionCard
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
@@ -596,13 +585,13 @@ const ProfessionalProfile = () => {
                   </Box>
                 </Stack>
               </CardContent>
-            </MotionCard>
+            </MotionCard> */}
           </Grid>
 
           {/* Sidebar */}
           <Grid item xs={12} md={4}>
             {/* Performance Stats */}
-            <MotionCard
+            {/* <MotionCard
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
@@ -627,10 +616,10 @@ const ProfessionalProfile = () => {
                   ))}
                 </Stack>
               </CardContent>
-            </MotionCard>
+            </MotionCard> */}
 
             {/* Availability Status */}
-            <MotionCard
+            {/* <MotionCard
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
@@ -662,7 +651,7 @@ const ProfessionalProfile = () => {
                   </Button>
                 </Stack>
               </CardContent>
-            </MotionCard>
+            </MotionCard> */}
 
             {/* Quick Actions */}
             <MotionCard
