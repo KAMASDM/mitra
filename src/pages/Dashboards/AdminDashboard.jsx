@@ -85,7 +85,8 @@ import {
   LocationOnOutlined as LocationIcon,
   VerifiedUserOutlined as VerifiedIcon,
   CalendarMonthOutlined as CalendarIcon,
-  CalendarToday
+  CalendarToday,
+  School as SchoolIcon,
 } from '@mui/icons-material';
 import {
   LineChart,
@@ -212,6 +213,12 @@ const EditProfessionalDialog = ({ professional, open, onClose, onSave, professio
             <TextField fullWidth name="email" label="Email Address" value={editData.email || ''} onChange={handleChange} />
           </Grid>
           <Grid item size={{ xs: 12, md: 6 }}>
+            <TextField fullWidth name="phone" label="Phone Number" value={editData.phone || ''} onChange={handleChange} />
+          </Grid>
+          <Grid item size={{ xs: 12, md: 6 }}>
+            <TextField fullWidth name="years_of_experience" label="Years of Experience" type="number" value={editData.years_of_experience || 0} onChange={handleChange} />
+          </Grid>
+          <Grid item size={{ xs: 12, md: 6 }}>
             <FormControl fullWidth>
               <InputLabel>Profession</InputLabel>
               <Select
@@ -229,10 +236,24 @@ const EditProfessionalDialog = ({ professional, open, onClose, onSave, professio
             </FormControl>
           </Grid>
           <Grid item size={{ xs: 12, md: 6 }}>
-            <TextField fullWidth name="years_of_experience" label="Years of Experience" type="number" value={editData.years_of_experience || 0} onChange={handleChange} />
+            <TextField fullWidth name="educational_qualification" label="Education" value={editData.educational_qualification || ''} onChange={handleChange} />
+          </Grid>
+          <Grid item size={{ xs: 12, md: 6 }}>
+            <TextField fullWidth name="languages_spoken" label="Languages Spoken" value={editData.languages_spoken || ''} onChange={handleChange} helperText="Separate languages with a comma" />
+          </Grid>
+          <Grid item size={{ xs: 12, md: 6 }}>
+            <TextField fullWidth name="address" label="Address" value={editData.address || ''} onChange={handleChange} />
           </Grid>
           <Grid item size={{ xs: 12 }}>
-            <TextField fullWidth name="address" label="address" value={editData.address || ''} onChange={handleChange} />
+            <TextField
+              fullWidth
+              name="biography"
+              label="Biography"
+              multiline
+              rows={4}
+              value={editData.biography || ''}
+              onChange={handleChange}
+            />
           </Grid>
         </Grid>
       </DialogContent>
@@ -754,10 +775,10 @@ const AdminDashboard = () => {
 
         <DialogContent dividers sx={{ p: 3 }}>
           {/* Profile Header */}
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <Grid container spacing={3} sx={{ justifyContent: 'center' }}>
+            <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
               <Avatar
-                src={professional.profile_picture}
+                src={professional.profile_picture || professional.photoURL}
                 sx={{ width: 120, height: 120, mb: 2, bgcolor: 'primary.light', fontSize: '4rem', color: 'primary.dark' }}
               >
                 {name.charAt(0).toUpperCase()}
@@ -766,39 +787,69 @@ const AdminDashboard = () => {
                 {name}
               </Typography>
               {/* <Chip
-                label={professional.profession || 'N/A'}
-                color="secondary"
-                size="small"
-                sx={{ mt: 1 }}
-              /> */}
+                  label={professionName}
+                  color="secondary"
+                  size="small"
+                  sx={{ mt: 1 }}
+               /> */}
             </Grid>
 
             {/* Details Section */}
-            <Grid item xs={12} sm={8}>
-              <Stack spacing={2}>
-                <DetailItem
-                  icon={<EmailIcon color="action" />}
-                  label="Email Address"
-                  value={professional.email}
-                />
-                <DetailItem
-                  icon={<ExperienceIcon color="action" />}
-                  label="Experience"
-                  value={`${professional.years_of_experience || professional.experience || 'N/A'} years`}
-                />
-                <DetailItem
-                  icon={<LocationIcon color="action" />}
-                  label="Address"
-                  value={professional.address || 'N/A'}
-                />
-                <DetailItem
-                  icon={<VerifiedIcon color="action" />}
-                  label="Status"
-                  value={professional.professionalStatus || 'N/A'}
-                />
-              </Stack>
+            <Grid item xs={12} md={8}>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <DetailItem
+                    icon={<EmailIcon color="action" />}
+                    label="Email Address"
+                    value={professional.email}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <DetailItem
+                    icon={<PhoneIcon color="action" />}
+                    label="Phone"
+                    value={professional.phone}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <DetailItem
+                    icon={<WorkIcon color="action" />}
+                    label="Experience"
+                    value={`${professional.years_of_experience || professional.experience || 'N/A'} years`}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <DetailItem
+                    icon={<SchoolIcon color="action" />}
+                    label="Education"
+                    value={professional.educational_qualification}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <DetailItem
+                    icon={<LanguageIcon color="action" />}
+                    label="Languages"
+                    value={professional.languages_spoken}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <DetailItem
+                    icon={<EventIcon color="action" />}
+                    label="Joined On"
+                    value={professional.created_at ? new Date(professional.created_at.seconds * 1000).toLocaleDateString() : 'N/A'}
+                  />
+                </Grid>
+              </Grid>
             </Grid>
           </Grid>
+          <Divider sx={{ my: 2 }} />
+          <Box>
+            <DetailItem
+              icon={<InfoIcon color="action" />}
+              label="Biography"
+              value={professional.biography || 'No biography provided.'}
+            />
+          </Box>
         </DialogContent>
 
         <DialogActions sx={{ p: 2, backgroundColor: 'grey.50' }}>
@@ -949,7 +1000,8 @@ const AdminDashboard = () => {
                     <TableCell>Professional</TableCell>
                     <TableCell>Profession</TableCell>
                     <TableCell>Experience</TableCell>
-                    <TableCell>Location</TableCell>
+                    <TableCell>Phone</TableCell>
+                    <TableCell sx={{ minWidth: 200 }}>Location</TableCell>
                     <TableCell>Status</TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
@@ -973,7 +1025,14 @@ const AdminDashboard = () => {
                           </TableCell>
                           <TableCell>{professionName}</TableCell>
                           <TableCell>{prof.years_of_experience ? `${prof.years_of_experience} years` : 'N/A'}</TableCell>
-                          <TableCell>{prof.address || 'N/A'}</TableCell>
+                          <TableCell>{prof.phone || 'N/A'}</TableCell>
+                          <TableCell sx={{ maxWidth: 250 }}>
+                            <Tooltip title={prof.address || 'Not Available'} arrow>
+                              <Typography noWrap sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {prof.address || 'N/A'}
+                              </Typography>
+                            </Tooltip>
+                          </TableCell>
                           <TableCell>
                             <Chip label={prof.professionalStatus} size="small" color={prof.professionalStatus === 'verified' ? 'success' : prof.professionalStatus === 'rejected' ? 'error' : 'warning'} />
                           </TableCell>
