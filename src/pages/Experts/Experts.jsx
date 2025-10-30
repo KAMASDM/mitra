@@ -112,7 +112,7 @@ const Experts = () => {
   useEffect(() => {
     // Don't run this effect until categories have been loaded
     if (categories.length > 0) {
-        fetchProfessionals();
+      fetchProfessionals();
     }
   }, [fetchProfessionals, categories]); // Re-runs when the memoized function changes
 
@@ -230,7 +230,7 @@ const Experts = () => {
 
             {/* Right Group: View Toggle Icons */}
             <Stack direction="row" spacing={1} alignItems="center" sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: '50px', p: '4px' }}>
-               <IconButton
+              <IconButton
                 size="small"
                 onClick={() => setViewMode('list')}
                 sx={{
@@ -243,7 +243,7 @@ const Experts = () => {
               >
                 <ViewList />
               </IconButton>
-              
+
               <IconButton
                 size="small"
                 onClick={() => setViewMode('grid')}
@@ -256,7 +256,7 @@ const Experts = () => {
                 }}
               >
                 <Apps />
-              </IconButton>             
+              </IconButton>
             </Stack>
           </Stack>
         </Box>
@@ -303,26 +303,84 @@ const Experts = () => {
               </Button>
             </Paper>
           ) : (
-            <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <Box
+              sx={{
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center'
+              }}>
               {viewMode === 'grid' ? (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, justifyContent: 'center', width: '100%' }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 3,
+                    justifyContent: 'center',
+                    width: '100%'
+                  }}>
                   {getCurrentPageProfessionals().map((professional, index) => (
-                    <Box key={professional.id} sx={{ width: { xs: '100%', sm: '280px', md: '280px' } }}>
+                    <Box key={professional.id}
+                      sx={{
+                        width: { xs: '100%', sm: '280px', md: '280px' }
+                      }}>
                       <MotionCard
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: (index % itemsPerPage) * 0.1 }}
-                        sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3, overflow: 'visible', position: 'relative', '&:hover': { transform: 'translateY(-8px)', boxShadow: '0 15px 35px rgba(0, 0, 0, 0.15)' }, transition: 'all 0.3s ease', cursor: 'pointer' }}
+                        sx={{
+                          height: '100%',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          borderRadius: 3,
+                          overflow: 'visible',
+                          position: 'relative',
+                          '&:hover': {
+                            transform: 'translateY(-8px)',
+                            boxShadow: '0 15px 35px rgba(0, 0, 0, 0.15)'
+                          },
+                          transition: 'all 0.3s ease',
+                          cursor: 'pointer'
+                        }}
                         onClick={() => navigate(`/professional/${professional.id}`)}
                       >
-                        <CardContent sx={{ flexGrow: 1, p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                          <Avatar sx={{ width: 80, height: 80, mb: 2, bgcolor: 'primary.light', fontSize: '2rem' }}>
+                        <CardContent
+                          sx={{
+                            flexGrow: 1,
+                            p: 3,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            textAlign: 'center'
+                          }}>
+                          <Avatar
+                            sx={{
+                              width: 80,
+                              height: 80,
+                              mb: 2,
+                              bgcolor: 'primary.light',
+                              fontSize: '2rem'
+                            }}>
                             {professional?.first_name?.charAt(0)?.toUpperCase() ?? 'P'}
                           </Avatar>
-                          <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, wordBreak: 'break-word', textTransform: 'capitalize', minHeight: '32px' }}>
+                          <Typography variant="h6"
+                            sx={{
+                              fontWeight: 700,
+                              mb: 1,
+                              wordBreak: 'break-word',
+                              textTransform: 'capitalize',
+                              minHeight: '32px'
+                            }}>
                             {`${professional?.first_name || ''} ${professional?.last_name || ''}`.trim() || 'Unnamed Professional'}
                           </Typography>
-                          <Typography variant="body2" color="primary" sx={{ mb: 2, minHeight: '40px', display: 'flex', alignItems: 'center' }}>
+                          <Typography variant="body2"
+                            color="primary"
+                            sx={{
+                              mb: 2,
+                              minHeight: '40px',
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}>
                             {professional?.specializations?.[0]?.label ?? 'No Specialization'}
                           </Typography>
                           <Chip
@@ -343,14 +401,38 @@ const Experts = () => {
                       initial={{ opacity: 0, x: -50 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.5, delay: (index % itemsPerPage) * 0.1 }}
-                      sx={{ mb: 2, p: 3, borderRadius: 3, boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)', transition: 'box-shadow 0.3s ease', '&:hover': { boxShadow: '0 8px 24px rgba(0, 0, 0, 0.1)' }, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                      sx={{
+                        mb: 2,
+                        p: 3,
+                        borderRadius: 3,
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                        transition: 'box-shadow 0.3s ease',
+                        '&:hover': {
+                          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.1)'
+                        },
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}
                       onClick={() => navigate(`/professional/${professional.id}`)}
                     >
-                      <Avatar sx={{ width: 60, height: 60, bgcolor: 'primary.light', fontSize: '1.5rem', mr: 3 }}>
+                      <Avatar
+                        sx={{
+                          width: 60,
+                          height: 60,
+                          bgcolor: 'primary.light',
+                          fontSize: '1.5rem',
+                          mr: 3
+                        }}>
                         {professional?.first_name?.charAt(0)?.toUpperCase() ?? 'P'}
                       </Avatar>
                       <Box sx={{ flexGrow: 1 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 600, textTransform: 'capitalize', mb: 0.5 }}>
+                        <Typography variant="h6"
+                          sx={{
+                            fontWeight: 600,
+                            textTransform: 'capitalize',
+                            mb: 0.5
+                          }}>
                           {`${professional?.first_name || ''} ${professional?.last_name || ''}`.trim() || 'Unnamed Professional'}
                         </Typography>
                         <Typography variant="body2" color="primary" sx={{ mb: 1 }}>

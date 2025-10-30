@@ -143,13 +143,14 @@ const timeSince = (date) => {
   return 'just now';
 };
 
-
+// Edit Professional Dialog
 const EditProfessionalDialog = ({ professional, open, onClose, onSave, professionalTypes }) => {
   const [editData, setEditData] = useState(null);
   const [saving, setSaving] = useState(false);
   const [newProfilePic, setNewProfilePic] = useState(null);
   const [profilePicPreview, setProfilePicPreview] = useState('');
 
+  // Initialize editData when professional changes
   useEffect(() => {
     if (professional) {
       const name = `${professional.first_name || ''} ${professional.last_name || ''}`.trim() || professional.displayName || '';
@@ -162,11 +163,13 @@ const EditProfessionalDialog = ({ professional, open, onClose, onSave, professio
     };
   }, [professional, open]);
 
+  // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setEditData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Handle profile picture change
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -175,6 +178,7 @@ const EditProfessionalDialog = ({ professional, open, onClose, onSave, professio
     }
   };
 
+  // Handle save changes
   const handleSaveChanges = async () => {
     setSaving(true);
     await onSave(editData, newProfilePic);
@@ -236,13 +240,32 @@ const EditProfessionalDialog = ({ professional, open, onClose, onSave, professio
             </FormControl>
           </Grid>
           <Grid item size={{ xs: 12, md: 6 }}>
-            <TextField fullWidth name="educational_qualification" label="Education" value={editData.educational_qualification || ''} onChange={handleChange} />
+            <TextField
+              fullWidth
+              name="educational_qualification"
+              label="Education"
+              value={editData.educational_qualification || ''}
+              onChange={handleChange}
+            />
           </Grid>
           <Grid item size={{ xs: 12, md: 6 }}>
-            <TextField fullWidth name="languages_spoken" label="Languages Spoken" value={editData.languages_spoken || ''} onChange={handleChange} helperText="Separate languages with a comma" />
+            <TextField
+              fullWidth
+              name="languages_spoken"
+              label="Languages Spoken"
+              value={editData.languages_spoken || ''}
+              onChange={handleChange}
+              helperText="Separate languages with a comma"
+            />
           </Grid>
           <Grid item size={{ xs: 12, md: 6 }}>
-            <TextField fullWidth name="address" label="Address" value={editData.address || ''} onChange={handleChange} />
+            <TextField
+              fullWidth
+              name="address"
+              label="Address"
+              value={editData.address || ''}
+              onChange={handleChange}
+            />
           </Grid>
           <Grid item size={{ xs: 12 }}>
             <TextField
@@ -267,40 +290,38 @@ const EditProfessionalDialog = ({ professional, open, onClose, onSave, professio
   );
 };
 
-
+// Main Admin Dashboard Component
 const AdminDashboard = () => {
   const theme = useTheme();
   const user = JSON.parse(localStorage.getItem('loginInfo'));
+
+  // State variables
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });// Snackbar state
   const [error, setError] = useState('');
-  const [userSearchTerm, setUserSearchTerm] = useState('');
-  const [professionalSearchTerm, setProfessionalSearchTerm] = useState('');
-  const [platformStats, setPlatformStats] = useState({});
-  const [allProfessionals, setAllProfessionals] = useState([]);
-  const [professionalStatusFilter, setProfessionalStatusFilter] = useState('ALL');
-  const [allUsers, setAllUsers] = useState([]);
-  const [settings, setSettings] = useState({});
-  const [metrics, setMetrics] = useState({});
-  const [recentActivity, setRecentActivity] = useState([]);
-  const [chartData, setChartData] = useState({ revenue: [], users: [] });
-  const [professionalTypes, setProfessionalTypes] = useState([]);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [userDetailsDialogOpen, setUserDetailsDialogOpen] = useState(false);
-
+  const [userSearchTerm, setUserSearchTerm] = useState(''); // User search term
+  const [professionalSearchTerm, setProfessionalSearchTerm] = useState(''); // Professional search term
+  const [platformStats, setPlatformStats] = useState({}); // Platform statistics
+  const [allProfessionals, setAllProfessionals] = useState([]); // All professionals
+  const [professionalStatusFilter, setProfessionalStatusFilter] = useState('ALL'); // Professional status filter
+  const [allUsers, setAllUsers] = useState([]); // All users
+  const [settings, setSettings] = useState({}); // Platform settings
+  const [metrics, setMetrics] = useState({}); // Platform metrics
+  const [recentActivity, setRecentActivity] = useState([]); // Recent activity
+  const [chartData, setChartData] = useState({ revenue: [], users: [] }); // Chart data
+  const [professionalTypes, setProfessionalTypes] = useState([]); // Professional types
+  const [page, setPage] = useState(0); // Current page
+  const [rowsPerPage, setRowsPerPage] = useState(10); // Rows per page
+  const [selectedUser, setSelectedUser] = useState(null); // Selected user for details dialog
+  const [userDetailsDialogOpen, setUserDetailsDialogOpen] = useState(false); // User details dialog state
   // State for the dialog tabs and client-specific data
   const [dialogTab, setDialogTab] = useState('user'); // 'user' or 'client'
   const [clientDetails, setClientDetails] = useState(null);
   const [clientDetailsLoading, setClientDetailsLoading] = useState(false);
-
   const [selectedProfessional, setSelectedProfessional] = useState(null);
   const [professionalDetailsDialogOpen, setProfessionalDetailsDialogOpen] = useState(false);
   const [editProfessionalDialogOpen, setEditProfessionalDialogOpen] = useState(false);
-
   const [actionDialog, setActionDialog] = useState({
     open: false,
     type: null,
@@ -308,6 +329,7 @@ const AdminDashboard = () => {
     reason: '',
   });
 
+  // Fetch initial data on mount
   useEffect(() => {
     fetchInitialData();
   }, []);
@@ -344,12 +366,14 @@ const AdminDashboard = () => {
     }
   };
 
+  // Snackbar handler
   const showSnackbar = (message, severity = 'success') => setSnackbar({ open: true, message, severity });
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
     setPage(0);
   };
 
+  // Fetch client-specific details by user ID
   const getClientDetailsByUserId = async (userId) => {
     try {
       const clientsRef = collection(db, 'clients');
@@ -375,6 +399,7 @@ const AdminDashboard = () => {
     }
   };
 
+  // Fetch client details for dialog
   const fetchClientDetailsForDialog = async (userId) => {
     if (!userId) return;
     setClientDetailsLoading(true);
@@ -388,6 +413,7 @@ const AdminDashboard = () => {
     setClientDetailsLoading(false);
   };
 
+  // Map of professional type IDs to titles
   const professionalTypeMap = useMemo(() => {
     if (!professionalTypes.length) return {};
     return professionalTypes.reduce((acc, type) => {
@@ -396,15 +422,17 @@ const AdminDashboard = () => {
     }, {});
   }, [professionalTypes]);
 
-
+  // Handlers for approving/rejecting professionals
   const handleApproveProfessional = (professional) => {
     setActionDialog({ open: true, type: 'approve', data: professional, reason: '' });
   };
 
+  // Reject professional handler
   const handleRejectProfessional = (professional) => {
     setActionDialog({ open: true, type: 'reject', data: professional, reason: '' });
   };
 
+  // Confirm professional action (approve/reject)
   const confirmProfessionalAction = async () => {
     const { type, data, reason } = actionDialog;
     const professionalId = data?.id;
@@ -436,6 +464,7 @@ const AdminDashboard = () => {
     }
   };
 
+  // Update user status handler
   const handleUserStatusChange = async (userId, newStatus) => {
     try {
       setLoading(true);
@@ -453,6 +482,7 @@ const AdminDashboard = () => {
     }
   };
 
+  // Delete user handler
   const handleDeleteUser = async (userId) => {
     if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
       try {
@@ -472,6 +502,7 @@ const AdminDashboard = () => {
     }
   };
 
+  // Filtered users based on search term
   const filteredUsers = useMemo(() => {
     let usersOnly = allUsers.filter(user => user.role === 'USER' || user.role === 'CLIENT' || !user.role);
     if (!userSearchTerm) return usersOnly;
@@ -483,6 +514,7 @@ const AdminDashboard = () => {
     );
   }, [userSearchTerm, allUsers]);
 
+  // Professional counts by status
   const professionalCounts = useMemo(() => {
     return {
       PENDING: allProfessionals.filter(p => p.professionalStatus === 'pending').length,
@@ -491,6 +523,7 @@ const AdminDashboard = () => {
     };
   }, [allProfessionals]);
 
+  // Filtered professionals based on search term and status filter
   const filteredProfessionals = useMemo(() => {
     let professionals = allProfessionals;
     if (professionalStatusFilter !== 'ALL') {
@@ -506,6 +539,7 @@ const AdminDashboard = () => {
     return professionals;
   }, [professionalSearchTerm, professionalStatusFilter, allProfessionals]);
 
+  // View user details handler
   const handleViewUser = (user) => {
     setSelectedUser(user);
     setDialogTab('user');
@@ -513,16 +547,19 @@ const AdminDashboard = () => {
     setUserDetailsDialogOpen(true);
   };
 
+  // View professional details handler
   const handleViewProfessional = (professional) => {
     setSelectedProfessional(professional);
     setProfessionalDetailsDialogOpen(true);
   };
 
+  // Edit professional details handler
   const handleEditProfessional = (professional) => {
     setSelectedProfessional(professional);
     setEditProfessionalDialogOpen(true);
   };
 
+  // Save changes from edit professional dialog
   const handleSaveChanges = async (updatedData, newProfilePic) => {
     let payload = { ...updatedData };
     if (newProfilePic) {
@@ -542,6 +579,7 @@ const AdminDashboard = () => {
       payload.first_name = nameParts[0] || '';
       payload.last_name = nameParts.slice(1).join(' ') || '';
     }
+    // Remove displayName from payload
     const result = await updateProfessionalDetails(payload.id, payload.user_id, payload);
     if (result.success) {
       setAllProfessionals(prev => prev.map(p => (p.id === payload.id ? { ...p, ...payload } : p)));
@@ -552,6 +590,7 @@ const AdminDashboard = () => {
     }
   };
 
+  // User And Client Details Dialog
   const UserAndClientDetailsDialog = ({ user, open, onClose }) => {
     if (!user) return null;
 
@@ -574,7 +613,13 @@ const AdminDashboard = () => {
     return (
       <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
         <DialogTitle sx={{ fontWeight: 700, pb: 0 }}>
-          <Tabs value={dialogTab} onChange={handleTabChange} sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs
+            value={dialogTab}
+            onChange={handleTabChange}
+            sx={{
+              borderBottom: 1,
+              borderColor: 'divider'
+            }}>
             <Tab label="User Details" value="user" />
             <Tab label="Profile Details" value="client" />
           </Tabs>
@@ -600,8 +645,19 @@ const AdminDashboard = () => {
                   </Avatar>
                 </Grid>
                 <Grid item xs={12} sm={8} md={9}>
-                  <Typography variant="h4" sx={{ fontWeight: 700 }}>{displayName}</Typography>
-                  <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>{user.email}</Typography>
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      fontWeight: 700
+                    }}>
+                    {displayName}
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    color="text.secondary"
+                    sx={{ mb: 1 }}>
+                    {user.email}
+                  </Typography>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <Chip
                       label={user.role || 'Client'}
@@ -624,16 +680,28 @@ const AdminDashboard = () => {
               {/* Other Details in a Grid */}
               <Grid container spacing={3}>
                 <Grid item xs={12} sm={6}>
-                  <DetailItem icon={<CalendarToday />} label="Joined On" value={user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'} />
+                  <DetailItem
+                    icon={<CalendarToday />}
+                    label="Joined On"
+                    value={user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'} />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <DetailItem icon={<HistoryIcon />} label="Last Login" value={user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'Never'} />
+                  <DetailItem
+                    icon={<HistoryIcon />}
+                    label="Last Login"
+                    value={user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'Never'} />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <DetailItem icon={<VerifiedIcon />} label="Email" value={user.email} />
+                  <DetailItem
+                    icon={<VerifiedIcon />}
+                    label="Email"
+                    value={user.email} />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <DetailItem icon={<PhoneIcon />} label="Phone Number" value={user.phone || 'N/A'} />
+                  <DetailItem
+                    icon={<PhoneIcon />}
+                    label="Phone Number"
+                    value={user.phone || 'N/A'} />
                 </Grid>
               </Grid>
             </Box>
@@ -642,39 +710,88 @@ const AdminDashboard = () => {
           {dialogTab === 'client' && (
             <Box sx={{ mt: 2 }}>
               {clientDetailsLoading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    p: 4
+                  }}
+                >
+                  <CircularProgress />
+                </Box>
               ) : clientDetails ? (
-                <Box sx={{ p: { xs: 1, sm: 2 }, bgcolor: alpha(theme.palette.grey[500], 0.05), borderRadius: 2 }}>
+                <Box
+                  sx={{
+                    p: { xs: 1, sm: 2 },
+                    bgcolor: alpha(theme.palette.grey[500], 0.05),
+                    borderRadius: 2
+                  }}
+                >
                   <Grid container spacing={3}>
 
                     {/* Left Column: Medical and Other Info */}
                     <Grid item size={{ xs: 12, md: 7 }}>
                       {/* Medical Info Section */}
-                      <Paper elevation={2} sx={{ p: 3, borderRadius: 3, mb: 3 }}>
-                        <Stack direction="row" spacing={1.5} alignItems="center" mb={2}>
+                      <Paper
+                        elevation={2}
+                        sx={{
+                          p: 3,
+                          borderRadius: 3,
+                          mb: 3
+                        }}>
+                        <Stack
+                          direction="row"
+                          spacing={1.5}
+                          alignItems="center"
+                          mb={2}>
                           <MedicalServicesIcon color="primary" />
-                          <Typography variant="h6" fontWeight={700}>Medical Information</Typography>
+                          <Typography
+                            variant="h6"
+                            fontWeight={700}
+                          >
+                            Medical Information
+                          </Typography>
                         </Stack>
                         <List dense>
                           <ListItem>
-                            <ListItemIcon><BloodtypeIcon fontSize="small" /></ListItemIcon>
-                            <ListItemText primary={clientDetails.blood_group || 'N/A'} secondary="Blood Group" />
+                            <ListItemIcon>
+                              <BloodtypeIcon fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={clientDetails.blood_group || 'N/A'}
+                              secondary="Blood Group" />
                           </ListItem>
                           <ListItem>
-                            <ListItemIcon><CakeIcon fontSize="small" /></ListItemIcon>
-                            <ListItemText primary={clientDetails.date_of_birth || 'N/A'} secondary="Date of Birth" />
+                            <ListItemIcon>
+                              <CakeIcon fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={clientDetails.date_of_birth || 'N/A'}
+                              secondary="Date of Birth" />
                           </ListItem>
                           <ListItem>
-                            <ListItemIcon><ReportIcon fontSize="small" /></ListItemIcon>
-                            <ListItemText primary={clientDetails.allergies || 'N/A'} secondary="Allergies" />
+                            <ListItemIcon>
+                              <ReportIcon fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={clientDetails.allergies || 'N/A'}
+                              secondary="Allergies" />
                           </ListItem>
                           <ListItem>
-                            <ListItemIcon><MedicationIcon fontSize="small" /></ListItemIcon>
-                            <ListItemText primary={clientDetails.current_medications || 'N/A'} secondary="Current Medications" />
+                            <ListItemIcon>
+                              <MedicationIcon fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={clientDetails.current_medications || 'N/A'}
+                              secondary="Current Medications" />
                           </ListItem>
                           <ListItem>
-                            <ListItemIcon><HistoryIcon fontSize="small" /></ListItemIcon>
-                            <ListItemText primary={clientDetails.medical_history || 'N/A'} secondary="Medical History" />
+                            <ListItemIcon>
+                              <HistoryIcon fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={clientDetails.medical_history || 'N/A'}
+                              secondary="Medical History" />
                           </ListItem>
                         </List>
                       </Paper>
@@ -687,16 +804,28 @@ const AdminDashboard = () => {
                         </Stack>
                         <List dense>
                           <ListItem>
-                            <ListItemIcon><WorkIcon fontSize="small" /></ListItemIcon>
-                            <ListItemText primary={clientDetails.occupation || 'N/A'} secondary="Occupation" />
+                            <ListItemIcon>
+                              <WorkIcon fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={clientDetails.occupation || 'N/A'}
+                              secondary="Occupation" />
                           </ListItem>
                           <ListItem>
-                            <ListItemIcon><LanguageIcon fontSize="small" /></ListItemIcon>
-                            <ListItemText primary={clientDetails.preferred_language || 'N/A'} secondary="Preferred Language" />
+                            <ListItemIcon>
+                              <LanguageIcon fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={clientDetails.preferred_language || 'N/A'}
+                              secondary="Preferred Language" />
                           </ListItem>
                           <ListItem>
-                            <ListItemIcon><EventIcon fontSize="small" /></ListItemIcon>
-                            <ListItemText primary={clientDetails.created_at || 'N/A'} secondary="Profile Created" />
+                            <ListItemIcon>
+                              <EventIcon fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={clientDetails.created_at || 'N/A'}
+                              secondary="Profile Created" />
                           </ListItem>
                         </List>
                       </Paper>
@@ -711,16 +840,28 @@ const AdminDashboard = () => {
                         </Stack>
                         <List dense>
                           <ListItem>
-                            <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
-                            <ListItemText primary={clientDetails.emergency_contact_name || 'N/A'} secondary="Contact Name" />
+                            <ListItemIcon>
+                              <PersonIcon fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={clientDetails.emergency_contact_name || 'N/A'}
+                              secondary="Contact Name" />
                           </ListItem>
                           <ListItem>
-                            <ListItemIcon><PhoneIcon fontSize="small" /></ListItemIcon>
-                            <ListItemText primary={clientDetails.emergency_contact_phone || 'N/A'} secondary="Contact Phone" />
+                            <ListItemIcon>
+                              <PhoneIcon fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={clientDetails.emergency_contact_phone || 'N/A'}
+                              secondary="Contact Phone" />
                           </ListItem>
                           <ListItem>
-                            <ListItemIcon><GroupIcon fontSize="small" /></ListItemIcon>
-                            <ListItemText primary={clientDetails.emergency_contact_relationship || 'N/A'} secondary="Relationship" />
+                            <ListItemIcon>
+                              <GroupIcon fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={clientDetails.emergency_contact_relationship || 'N/A'}
+                              secondary="Relationship" />
                           </ListItem>
                         </List>
                       </Paper>
@@ -741,19 +882,32 @@ const AdminDashboard = () => {
     );
   };
 
+  // Professional Details Dialog
   const DetailItem = ({ icon, label, value }) => (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 2,
+        mb: 1
+      }}>
       {icon}
       <Box>
-        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+        <Typography
+          variant="body1"
+          sx={{ fontWeight: 500 }}>
           {value || 'N/A'}
         </Typography>
-        <Typography variant="caption" color="text.secondary">
+        <Typography
+          variant="caption"
+          color="text.secondary">
           {label}
         </Typography>
       </Box>
     </Box>
   );
+
+  // Professional Details Dialog
   const ProfessionalDetailsDialog = ({ professional, open, onClose }) => {
     if (!professional) return null;
     const name = `${professional.first_name || ''} ${professional.last_name || ''}`.trim() || professional.displayName || 'Unnamed Professional';
@@ -766,7 +920,14 @@ const AdminDashboard = () => {
         fullWidth
         PaperProps={{ sx: { borderRadius: '12px' } }}
       >
-        <DialogTitle sx={{ fontWeight: 700, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <DialogTitle
+          sx={{
+            fontWeight: 700,
+            p: 2,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
           Professional Details
           <IconButton aria-label="close" onClick={onClose}>
             <CloseIcon />
@@ -776,14 +937,33 @@ const AdminDashboard = () => {
         <DialogContent dividers sx={{ p: 3 }}>
           {/* Profile Header */}
           <Grid container spacing={3} sx={{ justifyContent: 'center' }}>
-            <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <Grid item xs={12} md={4}
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
               <Avatar
                 src={professional.profile_picture || professional.photoURL}
-                sx={{ width: 120, height: 120, mb: 2, bgcolor: 'primary.light', fontSize: '4rem', color: 'primary.dark' }}
+                sx={{
+                  width: 120,
+                  height: 120,
+                  mb: 2,
+                  bgcolor: 'primary.light',
+                  fontSize: '4rem',
+                  color: 'primary.dark'
+                }}
               >
                 {name.charAt(0).toUpperCase()}
               </Avatar>
-              <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
+              <Typography
+                variant="h6"
+                component="div"
+                sx={{
+                  fontWeight: 'bold',
+                  textAlign: 'center'
+                }}>
                 {name}
               </Typography>
               {/* <Chip
@@ -879,7 +1059,7 @@ const AdminDashboard = () => {
     );
   };
 
-
+  // Render Overview Tab
   const renderOverview = () => (
     <Grid container spacing={4}>
       <Grid item size={{ xs: 12 }}>
@@ -895,9 +1075,23 @@ const AdminDashboard = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                sx={{ p: 3, borderRadius: 2, border: `2px solid ${alpha(stat.color, 0.1)}`, '&:hover': { borderColor: stat.color, transform: 'translateY(-4px)', boxShadow: `0 10px 25px ${alpha(stat.color, 0.2)}` }, transition: 'all 0.3s ease' }}
+                sx={{
+                  p: 3,
+                  borderRadius: 2,
+                  border: `2px solid ${alpha(stat.color, 0.1)}`,
+                  '&:hover': {
+                    borderColor: stat.color, transform: 'translateY(-4px)',
+                    boxShadow: `0 10px 25px ${alpha(stat.color, 0.2)}`
+                  },
+                  transition: 'all 0.3s ease'
+                }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}>
                   <Box>
                     <Typography variant="h4" sx={{ fontWeight: 800, color: stat.color, mb: 1 }}>
                       {stat.value}
@@ -908,7 +1102,11 @@ const AdminDashboard = () => {
                     <Chip
                       label={`${stat.change > 0 ? '+' : ''}${stat.change}%`}
                       size="small"
-                      sx={{ bgcolor: alpha(stat.change >= 0 ? theme.palette.success.main : theme.palette.error.main, 0.1), color: stat.change >= 0 ? 'success.main' : 'error.main', fontWeight: 600 }}
+                      sx={{
+                        bgcolor: alpha(stat.change >= 0 ? theme.palette.success.main : theme.palette.error.main, 0.1),
+                        color: stat.change >= 0 ? 'success.main' : 'error.main',
+                        fontWeight: 600
+                      }}
                     />
                   </Box>
                   <Box sx={{
@@ -927,7 +1125,11 @@ const AdminDashboard = () => {
       </Grid>
 
       <Grid item xs={12} md={8}>
-        <MotionCard initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} sx={{ borderRadius: 3, mb: 4 }}>
+        <MotionCard
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6 }}
+          sx={{ borderRadius: 3, mb: 4 }}>
           <CardContent sx={{ p: 4 }}>
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>Recent Activity</Typography>
             <Stack spacing={2}>
@@ -959,13 +1161,29 @@ const AdminDashboard = () => {
       </Grid>
 
       <Grid item xs={12} md={4}>
-        <MotionCard initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.2 }} sx={{ borderRadius: 3 }}>
+        <MotionCard
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          sx={{ borderRadius: 3 }}>
           <CardContent sx={{ p: 4 }}>
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>Quick Actions</Typography>
             <Stack spacing={2}>
-              <Button variant="contained" fullWidth startIcon={<People />} onClick={() => setTabValue(2)}>Manage Users</Button>
-              <Button variant="outlined" fullWidth startIcon={<Analytics />} onClick={() => setTabValue(3)}>View Reports</Button>
-              <Button variant="outlined" fullWidth startIcon={<Settings />} onClick={() => setTabValue(4)}>Platform Settings</Button>
+              <Button
+                variant="contained"
+                fullWidth
+                startIcon={<People />}
+                onClick={() => setTabValue(2)}>Manage Users</Button>
+              <Button
+                variant="outlined"
+                fullWidth
+                startIcon={<Analytics />}
+                onClick={() => setTabValue(3)}>View Reports</Button>
+              <Button
+                variant="outlined"
+                fullWidth
+                startIcon={<Settings />}
+                onClick={() => setTabValue(4)}>Platform Settings</Button>
             </Stack>
           </CardContent>
         </MotionCard>
@@ -976,15 +1194,53 @@ const AdminDashboard = () => {
   const renderProfessionalApprovals = () => (
     <Grid container spacing={4}>
       <Grid item xs={12}>
-        <MotionCard initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} sx={{ borderRadius: 3 }}>
-          <CardContent sx={{ p: 4, minWidth: '95vw' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+        <MotionCard
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          sx={{ borderRadius: 3 }}>
+          <CardContent
+            sx={{
+              p: 4,
+              minWidth: '95vw'
+            }}>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                mb: 3,
+                flexWrap: 'wrap',
+                gap: 2
+              }}>
               <Typography variant="h5" sx={{ fontWeight: 700 }}>Professional Management</Typography>
-              <Stack spacing={2} flexDirection={{ xs: 'column', sm: 'row' }} alignItems="center" width={{ xs: '100%', sm: 'auto' }} gap={2}>
-                <TextField size="small" variant="outlined" placeholder="Search..." value={professionalSearchTerm} onChange={(e) => setProfessionalSearchTerm(e.target.value)} InputProps={{ startAdornment: (<InputAdornment position="start"><Search /></InputAdornment>), }} sx={{ minWidth: 'auto' }} />
+              <Stack
+                spacing={2}
+                flexDirection={{
+                  xs: 'column',
+                  sm: 'row'
+                }}
+                alignItems="center"
+                width={{ xs: '100%', sm: 'auto' }}
+                gap={2}>
+                <TextField size="small"
+                  variant="outlined"
+                  placeholder="Search..."
+                  value={professionalSearchTerm}
+                  onChange={(e) => setProfessionalSearchTerm(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Search />
+                      </InputAdornment>),
+                  }}
+                  sx={{ minWidth: 'auto' }} />
+
                 <FormControl size="small" sx={{ minWidth: 180 }}>
                   <InputLabel>Status</InputLabel>
-                  <Select value={professionalStatusFilter} label="Status" onChange={(e) => setProfessionalStatusFilter(e.target.value)}>
+                  <Select
+                    value={professionalStatusFilter}
+                    label="Status"
+                    onChange={(e) => setProfessionalStatusFilter(e.target.value)}>
                     <MenuItem value="ALL">All Professionals</MenuItem>
                     <MenuItem value="PENDING">Pending ({professionalCounts.PENDING})</MenuItem>
                     <MenuItem value="VERIFIED">Verified ({professionalCounts.VERIFIED})</MenuItem>
@@ -1229,7 +1485,10 @@ const AdminDashboard = () => {
       </Grid>
 
       <Grid item size={{ xs: 12, md: 6 }}>
-        <MotionCard initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} sx={{ borderRadius: 3 }}>
+        <MotionCard
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          sx={{ borderRadius: 3 }}>
           <CardContent sx={{ p: 4 }}>
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
               Business Settings
@@ -1296,13 +1555,30 @@ const AdminDashboard = () => {
   );
 
   return (
-    <Box sx={{ py: 4, bgcolor: 'background.default', minHeight: '100vh' }}>
+    <Box
+      sx={{
+        py: 4,
+        bgcolor: 'background.default',
+        minHeight: '100vh'
+      }}>
       <Container maxWidth="xl">
         <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 800, color: 'text.primary', mb: 1 }}>
+          <Typography
+            variant="h4"
+            component="h1"
+            sx={{
+              fontWeight: 800,
+              color: 'text.primary'
+              , mb: 1
+            }}>
             Admin Dashboard 🛡️
           </Typography>
-          <Typography variant="h6" sx={{ color: 'text.secondary', fontWeight: 400 }}>
+          <Typography
+            variant="h6"
+            sx={{
+              color: 'text.secondary',
+              fontWeight: 400
+            }}>
             Welcome back, {user?.user?.name || 'Admin'}! Monitor and manage the SWEEKAR platform.
           </Typography>
         </Box>
@@ -1346,12 +1622,19 @@ const AdminDashboard = () => {
           professionalTypes={professionalTypes}
         />
 
-        <Dialog open={actionDialog.open} onClose={() => setActionDialog({ open: false, type: null, data: null, reason: '' })}>
-          <DialogTitle sx={{ fontWeight: 700 }}>
+        <Dialog
+          open={actionDialog.open}
+          onClose={() => setActionDialog({ open: false, type: null, data: null, reason: '' })}>
+          <DialogTitle
+            sx={{
+              fontWeight: 700
+            }}>
             {actionDialog.type === 'approve' ? 'Approve Professional' : 'Reject Professional'}
           </DialogTitle>
           <DialogContent>
-            <Typography variant="body1" sx={{ mb: 2 }}>
+            <Typography
+              variant="body1"
+              sx={{ mb: 2 }}>
               Are you sure you want to {actionDialog.type}{' '}
               <strong>{`${actionDialog.data?.first_name || ''} ${actionDialog.data?.last_name || ''}`.trim() || actionDialog.data?.displayName}</strong>?
             </Typography>

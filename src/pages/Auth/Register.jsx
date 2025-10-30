@@ -38,6 +38,7 @@ import {
 } from '@mui/icons-material';
 import { signUpWithEmailAndPassword, signInWithGoogle } from '../../services/authService';
 import { getProfessionalTypes } from '../../services/adminService';
+import { toast } from 'react-toastify';
 
 const MotionCard = motion(Card);
 
@@ -121,21 +122,23 @@ const Register = () => {
       };
       const result = await signUpWithEmailAndPassword(formData.email, formData.password, additionalData);
       if (result.success) {
-        const localData = {
-          user: {
-            id: result.user.uid,
-            email: result.user.email,
-            name: `${formData.firstName} ${formData.lastName}`,
-          },
-          user_type: formData.accountType,
-          token: await result.user.getIdToken(),
-        };
-        localStorage.setItem('loginInfo', JSON.stringify(localData));
-        if (formData.accountType === 'USER') {
-          navigate('/client/dashboard');
-        } else {
-          navigate('/professional/dashboard');
-        }
+        // const localData = {
+        //   user: {
+        //     id: result.user.uid,
+        //     email: result.user.email,
+        //     name: `${formData.firstName} ${formData.lastName}`,
+        //   },
+        //   user_type: formData.accountType,
+        //   token: await result.user.getIdToken(),
+        // };
+        // localStorage.setItem('loginInfo', JSON.stringify(localData));
+        // if (formData.accountType === 'USER') {
+        //   navigate('/client/dashboard');
+        // } else {
+        //   navigate('/professional/dashboard');
+        // }
+        toast.success('Registration successful! Please check your email to verify your account and log in.');
+        navigate('/login');
       } else {
         setError(result.error || 'Registration failed.');
       }

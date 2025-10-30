@@ -644,7 +644,7 @@ const MotionCard = motion(Card);
 const earnings = { today: 8500, thisWeek: 45000, thisMonth: 185000, total: 560000 };
 
 const ProfessionalDashboard = () => {
-
+  // --- STATE & EFFECTS ---
   const theme = useTheme();
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('loginInfo'));
@@ -659,6 +659,7 @@ const ProfessionalDashboard = () => {
     monthlyEarnings: 0
   });
 
+  // Prepare stats array for rendering
   const statsArray = [
     { label: 'Today\'s Sessions', value: stats.todaysAppointments, icon: <CalendarMonth />, color: '#5C4033' },
     { label: 'Total Clients', value: stats.totalClients, icon: <People />, color: '#5C4033' },
@@ -701,7 +702,7 @@ const ProfessionalDashboard = () => {
     });
 
     // Cleanup: Unsubscribe from the real-time listener when the component unmounts
-    
+
     return () => unsubscribe();
   }, [user?.user?.id]);
 
@@ -718,6 +719,7 @@ const ProfessionalDashboard = () => {
     // UI updates automatically because of the real-time listener
   };
 
+  // Decline appointment handler
   const handleDeclineAppointment = async (appointmentId) => {
     const result = await updateBookingStatus(appointmentId, 'cancelled', { cancellationReason: 'Declined by professional' });
     if (!result.success) alert('Failed to decline appointment.');
@@ -741,14 +743,33 @@ const ProfessionalDashboard = () => {
     return <VideoCall />;
   };
 
+  // --- RENDERING ---
   if (loading) {
-    return <Box display="flex" justifyContent="center" alignItems="center" height="100vh"><CircularProgress /></Box>;
+    return <Box
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+      height="100vh">
+      <CircularProgress />
+    </Box>;
   }
+  // Main render
   return (
-    <Box sx={{ py: 4, bgcolor: 'background.default', minHeight: '100vh' }}>
+    <Box
+      sx={{
+        py: 4,
+        bgcolor: 'background.default',
+        minHeight: '100vh'
+      }}>
       <Container maxWidth="xl">
         {/* Welcome Header */}
-        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box
+          sx={{
+            mb: 4,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
           <Box>
             <Typography variant="h4" component="h1" sx={{ fontWeight: 800 }}>
               Welcome, {user?.user?.name || 'Professional'}! 👨‍⚕️
@@ -757,20 +778,63 @@ const ProfessionalDashboard = () => {
               Here's your practice overview for today.
             </Typography>
           </Box>
-          <FormControlLabel control={<Switch checked={isAvailable} onChange={(e) => setIsAvailable(e.target.checked)} color="success" />} label="Available for bookings" />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isAvailable}
+                onChange={(e) => setIsAvailable(e.target.checked)}
+                color="success" />
+            }
+            label="Available for bookings"
+          />
         </Box>
 
         {/* Stats Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
           {statsArray.map((stat, index) => (
             <Grid item key={index} size={{ xs: 12, sm: 6, md: 3 }}>
-              <MotionCard initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: index * 0.1 }} sx={{ p: 3, borderRadius: 3, '&:hover': { transform: 'translateY(-4px)', boxShadow: `0 10px 25px ${alpha(stat.color, 0.2)}` } }}>
+              <MotionCard
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                sx={{
+                  p: 3,
+                  borderRadius: 3,
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: `0 10px 25px ${alpha(stat.color, 0.2)}`
+                  }
+                }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 800, color: stat.color, mb: 1 }}>{stat.value}</Typography>
-                    <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>{stat.label}</Typography>
+                    <Typography
+                      variant="h4"
+                      sx={{
+                        fontWeight: 800,
+                        color: stat.color,
+                        mb: 1
+                      }}>
+                      {stat.value}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'text.secondary',
+                        fontWeight: 500
+                      }}>
+                      {stat.label}
+                    </Typography>
                   </Box>
-                  <Box sx={{ width: 60, height: 60, borderRadius: '50%', background: alpha(stat.color, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center', color: stat.color }}>
+                  <Box sx={{
+                    width: 60,
+                    height: 60,
+                    borderRadius: '50%',
+                    background: alpha(stat.color, 0.1),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: stat.color
+                  }}>
                     {stat.icon}
                   </Box>
                 </Box>
@@ -782,48 +846,120 @@ const ProfessionalDashboard = () => {
         <Grid container spacing={4}>
           {/* Today's Appointments */}
           <Grid item size={{ xs: 12, lg: 8 }}>
-            <MotionCard initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} sx={{ borderRadius: 3, mb: 4 }}>
+            <MotionCard
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+              sx={{ borderRadius: 3, mb: 4 }}>
+
               <CardContent sx={{ p: { xs: 2, md: 4 } }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, gap: 2 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700 }}>Today's Appointments</Typography>
-                  <Button variant="outlined" size="small" startIcon={<CalendarMonth />} onClick={() => setIsScheduleModalOpen(true)}>View Full Calendar</Button>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 3,
+                    gap: 2
+                  }}>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 700
+                    }}>Today's Appointments</Typography>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<CalendarMonth />}
+                    onClick={() => setIsScheduleModalOpen(true)}>View Full Calendar</Button>
                 </Box>
                 <Stack spacing={3}>
                   {/* DYNAMICALLY RENDER todayAppointments INSTEAD OF MOCK DATA */}
                   {todayAppointments.length > 0 ? todayAppointments.map((appointment) => (
-                    <Paper key={appointment.id} variant="outlined" sx={{ p: 2.5, borderRadius: 2.5 }}>
+                    <Paper
+                      key={appointment.id}
+                      variant="outlined"
+                      sx={{
+                        p: 2.5,
+                        borderRadius: 2.5
+                      }}>
                       <Stack spacing={1.5}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Typography variant="h6" sx={{ fontWeight: 600 }}>{appointment.clientName}</Typography>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}>
+                          <Typography
+                            variant="h6"
+                            sx={{ fontWeight: 600 }}>
+                            {appointment.clientName}
+                          </Typography>
                           <Chip size="small" {...getStatusChipProps(appointment.status)} />
                         </Box>
 
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}>
                           <Stack direction="row" spacing={1} alignItems="center">
-                            <Chip icon={<Schedule fontSize="small" />} label={`${appointment.appointmentTime} (${appointment.duration} min)`} size="small" variant="outlined" />
-                            <Chip icon={getSessionTypeIcon(appointment.sessionType)} label={appointment.sessionType.replace(/_/g, ' ')} size="small" variant="outlined" />
+                            <Chip icon={<Schedule fontSize="small" />}
+                              label={`${appointment.appointmentTime} (${appointment.duration} min)`}
+                              size="small"
+                              variant="outlined" />
+
+                            <Chip icon={getSessionTypeIcon(appointment.sessionType)}
+                              label={appointment.sessionType.replace(/_/g, ' ')}
+                              size="small"
+                              variant="outlined" />
                           </Stack>
+
                           <Stack direction="row" spacing={0.5}>
                             {appointment.status === 'pending' && (
                               <>
-                                <IconButton size="small" color="error" onClick={() => handleDeclineAppointment(appointment.id)}><Cancel /></IconButton>
-                                <IconButton size="small" color="success" onClick={() => handleAcceptAppointment(appointment.id)}><CheckCircle /></IconButton>
+                                <IconButton size="small" color="error"
+                                  onClick={() => handleDeclineAppointment(appointment.id)}>
+                                  <Cancel />
+                                </IconButton>
+                                <IconButton size="small" color="success"
+                                  onClick={() => handleAcceptAppointment(appointment.id)}>
+                                  <CheckCircle />
+                                </IconButton>
                               </>
                             )}
-                            <IconButton size="small"><VideoCall /></IconButton>
-                            <IconButton size="small"><Chat /></IconButton>
+                            <IconButton size="small">
+                              <VideoCall />
+                            </IconButton>
+                            <IconButton size="small">
+                              <Chat />
+                            </IconButton>
                           </Stack>
                         </Box>
 
                         {appointment.notes && (
-                          <Typography variant="body2" sx={{ color: 'text.secondary', pt: 1, borderTop: 1, borderColor: 'divider' }}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: 'text.secondary',
+                              pt: 1,
+                              borderTop: 1,
+                              borderColor: 'divider'
+                            }}>
                             {appointment.notes}
                           </Typography>
                         )}
                       </Stack>
                     </Paper>
                   )) : (
-                    <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>No appointments scheduled for today.</Typography>
+                    <Typography
+                      color="text.secondary"
+                      sx={{
+                        textAlign: 'center',
+                        py: 4
+                      }}>
+                      No appointments scheduled for today.
+                    </Typography>
                   )}
                 </Stack>
               </CardContent>
@@ -832,34 +968,78 @@ const ProfessionalDashboard = () => {
           {/* Sidebar */}
           <Grid item size={{ xs: 12, lg: 4 }}>
             {/* Quick Actions */}
-            <MotionCard initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} sx={{ borderRadius: 3, mb: 4 }}>
+            <MotionCard
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+              sx={{ borderRadius: 3, mb: 4 }}>
+
               <CardContent sx={{ p: 4 }}>
                 <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>Quick Actions</Typography>
                 <Stack spacing={2}>
-                  <Button variant="contained" fullWidth startIcon={<CalendarMonth />} sx={{ py: 1.5, borderRadius: 2 }} onClick={() => setIsScheduleModalOpen(true)}>
+                  <Button
+                    variant="contained"
+                    fullWidth
+                    startIcon={<CalendarMonth />}
+                    sx={{ py: 1.5, borderRadius: 2 }}
+                    onClick={() => setIsScheduleModalOpen(true)}
+                  >
                     Manage Schedule
                   </Button>
-                  <Button variant="outlined" fullWidth startIcon={<Edit />} onClick={() => navigate('/professional/profile')} sx={{ py: 1.5, borderRadius: 2 }}>Edit Profile</Button>
-                  <Button variant="outlined" fullWidth startIcon={<Assessment />} sx={{ py: 1.5, borderRadius: 2 }}>Analytics</Button>
-                  <Button variant="outlined" fullWidth startIcon={<Chat />} sx={{ py: 1.5, borderRadius: 2 }}>Messages</Button>
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    startIcon={<Edit />}
+                    onClick={() => navigate('/professional/profile')}
+                    sx={{ py: 1.5, borderRadius: 2 }}>Edit Profile</Button>
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    startIcon={<Assessment />}
+                    sx={{ py: 1.5, borderRadius: 2 }}>Analytics</Button>
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    startIcon={<Chat />}
+                    sx={{ py: 1.5, borderRadius: 2 }}>Messages</Button>
                 </Stack>
               </CardContent>
             </MotionCard>
 
             {/* Earnings Overview */}
-            <MotionCard initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.2 }} sx={{ borderRadius: 3, mb: 4 }}>
+            <MotionCard
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              sx={{ borderRadius: 3, mb: 4 }}>
               <CardContent sx={{ p: 4 }}>
-                <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>Earnings Overview</Typography>
+                <Typography
+                  variant="h5" sx={{ fontWeight: 700, mb: 3 }}>Earnings Overview</Typography>
                 <Stack spacing={3}>
                   <Box>
-                    <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>Today</Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: 'success.main' }}>₹{earnings.today.toLocaleString()}</Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: 'text.secondary', mb: 1 }}>Today</Typography>
+                    <Typography
+                      variant="h4"
+                      sx={{ fontWeight: 700, color: 'success.main' }}>₹{earnings.today.toLocaleString()}
+                    </Typography>
                   </Box>
                   <Box>
-                    <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>This Month</Typography>
-                    <Typography variant="h5" sx={{ fontWeight: 600 }}>₹{earnings.thisMonth.toLocaleString()}</Typography>
-                    <LinearProgress variant="determinate" value={75} sx={{ mt: 1, height: 6, borderRadius: 3 }} />
-                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>75% of monthly goal</Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: 'text.secondary', mb: 1 }}>This Month</Typography>
+                    <Typography
+                      variant="h5"
+                      sx={{ fontWeight: 600 }}>₹{earnings.thisMonth.toLocaleString()}
+                    </Typography>
+                    <LinearProgress
+                      variant="determinate"
+                      value={75}
+                      sx={{ mt: 1, height: 6, borderRadius: 3 }} />
+                    <Typography
+                      variant="caption"
+                      sx={{ color: 'text.secondary' }}>75% of monthly goal</Typography>
                   </Box>
                 </Stack>
               </CardContent>
@@ -869,12 +1049,29 @@ const ProfessionalDashboard = () => {
       </Container>
 
       {/* --- SCHEDULE MANAGEMENT DIALOG --- */}
-      <Dialog open={isScheduleModalOpen} onClose={() => setIsScheduleModalOpen(false)} fullWidth maxWidth="md">
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Dialog
+        open={isScheduleModalOpen}
+        onClose={() => setIsScheduleModalOpen(false)}
+        fullWidth
+        maxWidth="md">
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
           Manage Your Schedule
-          <IconButton onClick={() => setIsScheduleModalOpen(false)}><CloseIcon /></IconButton>
+          <IconButton
+            onClick={() => setIsScheduleModalOpen(false)}>
+            <CloseIcon />
+          </IconButton>
         </DialogTitle>
-        <DialogContent sx={{ p: 0, height: '75vh', overflow: 'hidden' }}>
+        <DialogContent
+          sx={{
+            p: 0,
+            height: '75vh',
+            overflow: 'hidden'
+          }}>
           <ScheduleManagementView
             professional={{ id: user.user.id, ...user.user }} // Pass professional's own data
             user={user}

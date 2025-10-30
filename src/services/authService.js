@@ -7,10 +7,12 @@ import {
   updateProfile,
   signInWithPopup,
   GoogleAuthProvider,
-  FacebookAuthProvider
+  FacebookAuthProvider,
+  sendEmailVerification
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp, collection } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
+import { sendWelcomeEmail } from './emailService';
 
 const USERS_COLLECTION = 'users';
 const PROFESSIONALS_COLLECTION = 'professionals';
@@ -40,9 +42,62 @@ const createUserProfile = async (user, additionalData = {}) => {
   return userRef;
 };
 
+// export const signUpWithEmailAndPassword = async (email, password, userData) => {
+//   try {
+//     const { user } = await createUserWithEmailAndPassword(auth, email, password);
+
+//     if (userData.displayName) {
+//       await updateProfile(user, { displayName: userData.displayName });
+//     }
+
+//     const nameParts = (userData.displayName || '').split(' ');
+//     const firstName = nameParts[0] || '';
+//     const lastName = nameParts.slice(1).join(' ') || '';
+
+//     await createUserProfile(user, {
+//       ...userData,
+//       first_name: firstName,
+//       last_name: lastName,
+//       role: userData.accountType || 'USER',
+//       emailVerified: user.emailVerified,
+//       isActive: true,
+//       status: 'active',
+//     });
+//     await createUserProfile(user, firestoreUserData);
+
+//     if (userData.accountType === 'PROFESSIONAL') {
+//       const professionalDocRef = doc(db, PROFESSIONALS_COLLECTION, user.uid);
+//       await setDoc(professionalDocRef, {
+//         user_id: user.uid,
+//         first_name: firstName,
+//         last_name: lastName,
+//         email: email,
+//         professional_type_id: userData.professionalType || null,
+//         verification_status: 'PENDING',
+//         createdAt: serverTimestamp(),
+//         updatedAt: serverTimestamp(),
+//         years_of_experience: 0,
+//         location: '',
+//         profile_picture: '',
+//         documents: [],
+//       });
+//     }
+//     await sendWelcomeEmail(email, {
+//       name: userData.displayName,
+//       role: firestoreUserData.role
+//     });
+//     return { user, success: true };
+//   } catch (error) {
+//     console.error('Error signing up:', error);
+//     return { error: error.message, success: false };
+//   }
+// };
+
 export const signUpWithEmailAndPassword = async (email, password, userData) => {
   try {
     const { user } = await createUserWithEmailAndPassword(auth, email, password);
+
+    await sendEmailVerification(user); // Send verification email
 
     if (userData.displayName) {
       await updateProfile(user, { displayName: userData.displayName });
@@ -52,15 +107,18 @@ export const signUpWithEmailAndPassword = async (email, password, userData) => {
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
 
-    await createUserProfile(user, {
+    // Data to be saved to Firestore for the user document
+    const finalFirestoreUserData = {
       ...userData,
       first_name: firstName,
       last_name: lastName,
       role: userData.accountType || 'USER',
-      emailVerified: user.emailVerified,
+      emailVerified: false,
       isActive: true,
       status: 'active',
-    });
+    };
+
+    await createUserProfile(user, finalFirestoreUserData);
 
     if (userData.accountType === 'PROFESSIONAL') {
       const professionalDocRef = doc(db, PROFESSIONALS_COLLECTION, user.uid);
@@ -80,21 +138,45 @@ export const signUpWithEmailAndPassword = async (email, password, userData) => {
       });
     }
 
-    return { user, success: true };
+    // --- SEND CONFIRMATION EMAIL AFTER SUCCESSFUL REGISTRATION ---
+    await sendWelcomeEmail(email, {
+      name: userData.displayName,
+      role: userData.accountType
+    });
+    await signOut(auth); // Sign out the user after registration to enforce email verification
+    return { success: true, needsVerification: true }; // Indicate that verification is needed
+    // return { user, success: true };
   } catch (error) {
     console.error('Error signing up:', error);
     return { error: error.message, success: false };
   }
 };
-
 export const signInWithEmailAndPassword_Custom = async (email, password) => {
   try {
     const { user } = await signInWithEmailAndPassword(auth, email, password);
     const userRef = doc(db, USERS_COLLECTION, user.uid);
     const userSnap = await getDoc(userRef);
 
-    if (userSnap.exists()) {
+   if (!user.emailVerified){
+      // If not verified, sign out and return a specific error flag
+     await signOut(auth);
+      return {
+        error: "Email not verified. Please check your inbox and click the verification link.",
+        success: false,
+        needsVerification: true // Custom flag for UI handling
+      };
+    }
+
+   if (userSnap.exists()) {
       const userData = userSnap.data();
+      // --- UPDATE FIRESTORE: If verified in Auth but not in Firestore ---
+      if (userData.emailVerified === false || userData.emailVerified === undefined) { 
+        await updateDoc(userRef, {
+          emailVerified: true // <<-- This line sets it to true
+        });
+        userData.emailVerified = true;
+      }
+
       await updateUserLastLogin(user.uid);
       // Return auth user and firestore data separately
       return { user, userData, success: true };

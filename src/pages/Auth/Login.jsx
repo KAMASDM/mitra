@@ -16,6 +16,9 @@ import {
   Divider,
   useTheme,
   alpha,
+  Dialog,
+  DialogTitle,
+  DialogContent,
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -26,7 +29,9 @@ import {
   Lock,
   Google,
 } from '@mui/icons-material';
-import { signInWithEmailAndPassword_Custom, signInWithGoogle } from '../../services/authService';
+import { Close as CloseIcon } from '@mui/icons-material';
+import { toast } from 'react-toastify';
+import { signInWithEmailAndPassword_Custom, signInWithGoogle, resetPassword } from '../../services/authService';
 
 const MotionCard = motion(Card);
 
@@ -37,12 +42,52 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetError, setResetError] = useState('');
+  const [resetSuccess, setResetSuccess] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     setError('');
   };
+  const handleOpenResetDialog = () => {
+    setResetDialogOpen(true);
+    setResetEmail('');
+    setResetError('');
+    setResetSuccess('');
+    setError(''); // Clear main login error
+  };
+  const handleResetSubmit = async (e) => {
+    e.preventDefault();
+    setResetLoading(true);
+    setResetError('');
+    setResetSuccess('');
 
+    if (!resetEmail) {
+      setResetError('Please enter your email address.');
+      setResetLoading(false);
+      return;
+    }
+
+    try {
+      // Call the function from authService.js
+      const result = await resetPassword(resetEmail);
+
+      if (result.success) {
+        setResetSuccess('Password reset link sent! Please check your email inbox.');
+        // Optionally, close the dialog after a delay
+        setTimeout(() => setResetDialogOpen(false), 5000);
+      } else {
+        setResetError(result.error || 'Failed to send reset email. Please try again.');
+      }
+    } catch (err) {
+      setResetError('An unexpected error occurred. Please try again.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
   const handleRedirect = (userData) => {
     switch (userData.role) {
       case 'CLIENT':
@@ -81,6 +126,10 @@ const Login = () => {
         localStorage.setItem('loginInfo', JSON.stringify(localData));
         handleRedirect(result.userData);
       } else {
+        if (result.needsVerification) {
+          // Use toast for the critical email verification alert
+          toast.error(result.error);
+        }
         setError(result.error || 'Invalid email or password');
       }
     } catch (err) {
@@ -138,7 +187,7 @@ const Login = () => {
               <TextField fullWidth name="email" type="email" label="Email Address" value={formData.email} onChange={handleChange} required InputProps={{ startAdornment: (<InputAdornment position="start"><Email color="action" /></InputAdornment>), }} />
               <TextField fullWidth name="password" type={showPassword ? 'text' : 'password'} label="Password" value={formData.password} onChange={handleChange} required InputProps={{ startAdornment: (<InputAdornment position="start"><Lock color="action" /></InputAdornment>), endAdornment: (<InputAdornment position="end"><IconButton onClick={() => setShowPassword(!showPassword)} edge="end">{showPassword ? <VisibilityOff /> : <Visibility />}</IconButton></InputAdornment>), }} />
               <Box sx={{ textAlign: 'right' }}>
-                <Link component="button" type="button" variant="body2" onClick={() => setError('Password reset feature coming soon!')} sx={{ color: 'primary.main', textDecoration: 'none', fontWeight: 500, '&:hover': { textDecoration: 'underline' } }}>
+                <Link component="button" type="button" variant="body2" onClick={handleOpenResetDialog} sx={{ color: 'primary.main', textDecoration: 'none', fontWeight: 500, '&:hover': { textDecoration: 'underline' } }}>
                   Forgot password?
                 </Link>
               </Box>
@@ -166,6 +215,54 @@ const Login = () => {
           </Box>
         </CardContent>
       </MotionCard>
+
+      <Dialog
+        open={resetDialogOpen}
+        onClose={() => setResetDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 700 }}>
+          Reset Your Password
+          <IconButton
+            onClick={() => setResetDialogOpen(false)}
+            sx={{ position: 'absolute', right: 8, top: 8 }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Enter your email address and we will send you a link to reset your password.
+          </Typography>
+
+          {resetSuccess && <Alert severity="success" sx={{ mb: 2 }}>{resetSuccess}</Alert>}
+          {resetError && <Alert severity="error" sx={{ mb: 2 }}>{resetError}</Alert>}
+
+          <form onSubmit={handleResetSubmit}>
+            <TextField
+              fullWidth
+              name="resetEmail"
+              type="email"
+              label="Email Address"
+              value={resetEmail}
+              onChange={(e) => setResetEmail(e.target.value)}
+              required
+              disabled={resetLoading || resetSuccess}
+              InputProps={{ startAdornment: (<InputAdornment position="start"><Email color="action" /></InputAdornment>), }}
+            />
+            <Button
+              type="submit"
+              variant="contained"
+              fullWidth
+              disabled={resetLoading || resetSuccess}
+              sx={{ mt: 3, py: 1.5, fontSize: '1rem', fontWeight: 600, borderRadius: 3 }}
+            >
+              {resetLoading ? 'Sending Link...' : 'Send Reset Link'}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 };

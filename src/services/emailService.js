@@ -63,7 +63,7 @@ const queueEmail = async (emailData) => {
       createdAt: new Date(),
       scheduledFor: emailData.scheduledFor || new Date()
     });
-
+ console.log(`[EMAIL QUEUE] Successfully added email to queue. ID: ${emailDoc.id}, To: ${emailData.to}`); // <-- ADDED LOG
     return { id: emailDoc.id, success: true };
   } catch (error) {
     console.error('Error queuing email:', error);
@@ -433,11 +433,44 @@ const generateEmailContent = (templateType, data) => {
 /**
  * Send welcome email to new users
  */
+// export const sendWelcomeEmail = async (userEmail, userData) => {
+//   try {
+//     const settings = await getPlatformSettings();
+//     if (!settings.success || !settings.settings.sendWelcomeEmail) {
+//       return { success: true, message: 'Welcome emails are disabled' };
+//     }
+
+//     const emailContent = generateEmailContent('welcome_email', {
+//       name: userData.name || userData.displayName || 'User',
+//       dashboardUrl: `${window.location.origin}/${userData.role?.toLowerCase()}/dashboard`
+//     });
+
+//     return await queueEmail({
+//       to: userEmail,
+//       subject: EMAIL_TEMPLATES.welcome.subject,
+//       html: emailContent.html,
+//       text: emailContent.text,
+//       type: 'welcome',
+//       priority: 'normal'
+//     });
+//   } catch (error) {
+//     console.error('Error sending welcome email:', error);
+//     return { error: error.message, success: false };
+//   }
+// };
+
 export const sendWelcomeEmail = async (userEmail, userData) => {
   try {
     const settings = await getPlatformSettings();
-    if (!settings.success || !settings.settings.sendWelcomeEmail) {
-      return { success: true, message: 'Welcome emails are disabled' };
+
+    // Check if the setting is explicitly enabled
+    const isWelcomeEmailEnabled = settings.success && settings.settings && settings.settings.sendWelcomeEmail === true;
+
+    // Log the current setting value for debugging
+    console.log(`[EMAIL CHECK] Attempting to send welcome email to ${userEmail}. Setting 'sendWelcomeEmail' is: ${isWelcomeEmailEnabled ? 'ENABLED' : 'DISABLED'}.`);
+
+    if (!isWelcomeEmailEnabled) {
+      return { success: true, message: 'Welcome emails are disabled by platform settings' };
     }
 
     const emailContent = generateEmailContent('welcome_email', {
@@ -445,7 +478,13 @@ export const sendWelcomeEmail = async (userEmail, userData) => {
       dashboardUrl: `${window.location.origin}/${userData.role?.toLowerCase()}/dashboard`
     });
 
-    return await queueEmail({
+    if (!emailContent) {
+        console.error('[EMAIL ERROR] Failed to generate email content for welcome_email');
+        return { success: false, error: 'Failed to generate email content' };
+    }
+
+    // Queue the email
+    const queueResult = await queueEmail({
       to: userEmail,
       subject: EMAIL_TEMPLATES.welcome.subject,
       html: emailContent.html,
@@ -453,6 +492,12 @@ export const sendWelcomeEmail = async (userEmail, userData) => {
       type: 'welcome',
       priority: 'normal'
     });
+    
+    if (!queueResult.success) {
+        console.error('[EMAIL ERROR] Failed to queue welcome email:', queueResult.error);
+    }
+    
+    return queueResult;
   } catch (error) {
     console.error('Error sending welcome email:', error);
     return { error: error.message, success: false };

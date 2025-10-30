@@ -398,8 +398,12 @@ export const ScheduleManagementView = ({ professional, user, isEditable }) => {
         <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
           <Box display="flex" alignItems="center" p={1.5} borderBottom={1} borderColor="divider">
             <Button onClick={handleToday} variant="outlined" size="small" sx={{ mr: 2 }}>Today</Button>
-            <IconButton onClick={handlePrevDay} size="small"><ChevronLeft /></IconButton>
-            <IconButton onClick={handleNextDay} size="small"><ChevronRight /></IconButton>
+            <IconButton onClick={handlePrevDay} size="small">
+              <ChevronLeft />
+            </IconButton>
+            <IconButton onClick={handleNextDay} size="small">
+              <ChevronRight />
+            </IconButton>
             <Typography variant="h6" ml={2}>{viewDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</Typography>
           </Box>
           <Box sx={{ flexGrow: 1, overflowY: 'auto', position: 'relative' }} onDoubleClick={handleGridDoubleClick} ref={calendarGridRef}>
@@ -424,8 +428,12 @@ export const ScheduleManagementView = ({ professional, user, isEditable }) => {
                         opacity: event.is_booked ? 0.7 : 1,
                       }}
                     >
-                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{event.title}</Typography>
-                      <Typography variant="caption">{`${event.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${event.end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                        {event.title}
+                      </Typography>
+                      <Typography variant="caption">
+                        {`${event.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${event.end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                      </Typography>
                       {event.is_booked && <Chip label="Booked" size="small" sx={{ mt: 1 }} />}
                     </Box>
                   );
@@ -438,7 +446,7 @@ export const ScheduleManagementView = ({ professional, user, isEditable }) => {
 
       {/* Add/Edit Modal */}
       <Dialog open={isEventModalOpen} onClose={closeEventModal}>
-        <DialogTitle>{modalMode === 'create' ? 'Add Availability Slot' : 'Edit Slot'}</DialogTitle>
+        <DialogTitle> {modalMode === 'create' ? 'Add Availability Slot' : 'Edit Slot'} </DialogTitle>
         <DialogContent>
           <Stack spacing={2} pt={1}>
             <TextField label="Title" fullWidth autoFocus value={newEventData.title} onChange={(e) => setNewEventData({ ...newEventData, title: e.target.value })} />
@@ -592,8 +600,15 @@ const ClientDashboard = () => {
     );
   }, [searchQuery, recommendations]);
 
-  if (loading) return <Box display="flex" justifyContent="center" alignItems="center" height="100vh"><CircularProgress /></Box>;
-  if (error) return <Container sx={{ py: 8 }}><Alert severity="error">{error}</Alert></Container>;
+  if (loading) return <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+    <CircularProgress />
+  </Box>;
+
+  if (error) return <Container sx={{ py: 8 }}>
+    <Alert severity="error">
+      {error}
+    </Alert>
+  </Container>;
 
   return (
     <Box sx={{ py: 4, bgcolor: 'background.default', minHeight: '100vh' }}>
@@ -763,23 +778,47 @@ const ClientDashboard = () => {
                     <TableRow key={prof.id}>
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>{prof.first_name?.charAt(0)?.toUpperCase()}</Avatar>
+                          <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
+                            {prof.first_name?.charAt(0)?.toUpperCase()}
+                          </Avatar>
                           <Box>
-                            <Typography variant="body1" sx={{ textTransform: 'capitalize', fontWeight: 500 }}>{`${prof.first_name || ''} ${prof.last_name || ''}`.trim()}</Typography>
-                            <Typography variant="body2" color="text.secondary">{prof.email}</Typography>
+                            <Typography variant="body1"
+                              sx={{ textTransform: 'capitalize', fontWeight: 500 }}>
+                              {`${prof.first_name || ''} ${prof.last_name || ''}`.trim()}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {prof.email}
+                            </Typography>
                           </Box>
                         </Box>
                       </TableCell>
-                      <TableCell>{prof.specializations?.[0]?.label || 'Not specified'}</TableCell>
-                      <TableCell>{prof.educational_qualification || 'Not specified'}</TableCell>
-                      <TableCell>{prof.phone || 'N/A'}</TableCell>
-                      <TableCell sx={{ textAlign: 'center' }}><IconButton color="primary" onClick={() => handleOpenModal(prof)} size="small"><Visibility /></IconButton></TableCell>
+                      <TableCell>
+                        {prof.specializations?.[0]?.label || 'Not specified'}
+                      </TableCell>
+                      <TableCell>
+                        {prof.educational_qualification || 'Not specified'}
+                      </TableCell>
+                      <TableCell>
+                        {prof.phone || 'N/A'}
+                      </TableCell>
+                      <TableCell sx={{ textAlign: 'center' }}>
+                        <IconButton color="primary" onClick={() => handleOpenModal(prof)} size="small">
+                          <Visibility />
+                        </IconButton>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </TableContainer>
-            <TablePagination rowsPerPageOptions={[5, 10, 25]} component="div" count={filteredRecommendations.length} rowsPerPage={rowsPerPage} page={page} onPageChange={handleChangePage} onRowsPerPageChange={handleChangeRowsPerPage} />
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25]}
+              component="div"
+              count={filteredRecommendations.length}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage} />
           </CardContent>
         </MotionCard>
       </Container>
@@ -788,9 +827,17 @@ const ClientDashboard = () => {
       {selectedProf && (
         <Dialog open={isModalOpen} onClose={handleCloseModal} maxWidth="md" fullWidth>
           <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            User Details <IconButton onClick={handleCloseModal}><CloseIcon /></IconButton>
+            User Details
+            <IconButton onClick={handleCloseModal}>
+              <CloseIcon />
+            </IconButton>
           </DialogTitle>
-          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}><Tabs value={activeTab} onChange={handleTabChange} variant="fullWidth"><Tab label="Profile" /><Tab label="Schedule Meeting" /></Tabs></Box>
+          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Tabs value={activeTab} onChange={handleTabChange} variant="fullWidth">
+              <Tab label="Profile" />
+              <Tab label="Schedule Meeting" />
+            </Tabs>
+          </Box>
           <DialogContent sx={{ height: '75vh', ...(activeTab === 1 ? { p: 0, overflow: 'hidden' } : { p: 3, overflow: 'auto' }) }}>
             {activeTab === 0 && (
               <Box>
@@ -890,7 +937,8 @@ const ClientDashboard = () => {
                   </Typography>
                   {selectedProf.biography ? (
                     <>
-                      <Typography variant="body2" sx={{ whiteSpace: 'pre-line', textAlign: 'justify' }}>
+                      <Typography variant="body2"
+                        sx={{ whiteSpace: 'pre-line', textAlign: 'justify' }}>
                         {isBioExpanded || selectedProf.biography.length <= 350
                           ? selectedProf.biography
                           : `${selectedProf.biography.substring(0, 250)}...`}
