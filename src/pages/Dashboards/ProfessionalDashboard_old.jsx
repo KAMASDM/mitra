@@ -910,7 +910,7 @@ const ProfessionalDashboard = () => {
                               variant="outlined" />
 
                             <Chip icon={getSessionTypeIcon(appointment.sessionType)}
-                              label={appointment.sessionType.replace(/_/g, ' ')}
+                              label={appointment.sessionType?.replace(/_/g, ' ')}
                               size="small"
                               variant="outlined" />
                           </Stack>

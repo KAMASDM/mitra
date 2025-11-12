@@ -914,9 +914,11 @@ export const getAllProfessionalsWithUserDetails = async () => {
 
         if (userSnap.exists()) {
           const userData = userSnap.data();
+           const finalProfilePicture = profData.profile_picture || userData.profile_picture || userData.photoURL;
           return {
             ...userData, // User details (name, email)
             ...profData, // Professional details (status, experience)
+            profile_picture: finalProfilePicture,
             // Standardize the status field for filtering
             professionalStatus: profData.verification_status?.toLowerCase() || 'pending',
           };
@@ -947,7 +949,7 @@ export const updateProfessionalDetails = async (professionalId, userId, data, ne
       const uploadResult = await uploadProfilePicture(userId, newProfilePic);
       if (uploadResult.success) {
         // Add the new URL to the data object to be saved.
-        data.photoURL = uploadResult.photoURL;
+        // data.photoURL = uploadResult.photoURL;
         data.profile_picture = uploadResult.photoURL;
       } else {
         // If the upload fails, return an error.
@@ -965,12 +967,13 @@ export const updateProfessionalDetails = async (professionalId, userId, data, ne
       professional_type_id: data.professional_type_id ?? null,
       years_of_experience: data.years_of_experience ?? 0,
       address: data.address ?? '',
+      profile_picture: data.profile_picture ?? '',
     };
 
     // Conditionally add profile picture URL if it exists
-    if (data.profile_picture) {
-      professionalUpdatePayload.profile_picture = data.profile_picture;
-    }
+    // if (data.profile_picture) {
+    //   professionalUpdatePayload.profile_picture = data.profile_picture;
+    // }
 
     batch.update(professionalRef, professionalUpdatePayload);
 
@@ -981,9 +984,9 @@ export const updateProfessionalDetails = async (professionalId, userId, data, ne
         email: data.email ?? '',
       };
 
-      // Conditionally add photo URL if it exists
-      if (data.photoURL) {
-        userUpdatePayload.photoURL = data.photoURL;
+      // Conditionally add profile picture URL if it exists
+      if (data.profile_picture) {
+        userUpdatePayload.profile_picture = data.profile_picture;
       }
 
       if (Object.keys(userUpdatePayload).length > 0) {

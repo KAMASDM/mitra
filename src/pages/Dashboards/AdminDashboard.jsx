@@ -566,8 +566,8 @@ const AdminDashboard = () => {
       showSnackbar('Uploading new profile picture...', 'info');
       const uploadResult = await uploadProfilePicture(payload.user_id, newProfilePic);
       if (uploadResult.success) {
-        payload.photoURL = uploadResult.photoURL;
-        payload.profile_picture = uploadResult.photoURL;
+        // payload.photoURL = uploadResult.photoURL;
+        payload.profile_picture = uploadResult.profile_picture;
         showSnackbar('Picture uploaded successfully!', 'success');
       } else {
         showSnackbar('Failed to upload new profile picture.', 'error');
@@ -945,7 +945,8 @@ const AdminDashboard = () => {
                 justifyContent: 'center'
               }}>
               <Avatar
-                src={professional.profile_picture || professional.photoURL}
+                // src={professional.profile_picture || professional.photoURL}
+                src={professional.profile_picture}
                 sx={{
                   width: 120,
                   height: 120,

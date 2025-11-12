@@ -36,7 +36,7 @@ export const uploadProfilePicture = async (userId, file) => {
     const fileRef = ref(storage, filePath);
     const uploadResult = await uploadBytes(fileRef, file);
     const downloadURL = await getDownloadURL(uploadResult.ref);
-    return { success: true, photoURL: downloadURL };
+    return { success: true, profile_picture: downloadURL };
   } catch (error) {
     console.error('Error uploading profile picture:', error);
     return { success: false, error: error.message };
@@ -336,7 +336,7 @@ export const updateProfessionalProfile = async (userId, professionalId, data) =>
     const userData = {
       displayName: `${data.firstName || ''} ${data.lastName || ''}`.trim(),
       phone: data.phone,
-      ...(data.photoURL && { photoURL: data.photoURL })
+      ...(data.profile_picture && { profile_picture: data.photoURL })
     };
     batch.update(userRef, userData);
 

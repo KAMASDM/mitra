@@ -168,8 +168,26 @@ const Login = () => {
   };
 
   return (
-    <Box sx={{ minWidth: '98vw', minHeight: '100vh', overflowX: 'hidden !important', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)}, ${alpha(theme.palette.secondary.main, 0.1)})` }}>
-      <MotionCard initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} sx={{ borderRadius: 4, boxShadow: '0 15px 35px rgba(0, 0, 0, 0.1)', maxWidth: '450px', width: '100%' }}>
+    <Box sx={{
+      minWidth: '98vw',
+      minHeight: '100vh',
+      overflowX: 'hidden !important',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      p: 2,
+      background: `linear-gradient(135deg, 
+          ${alpha(theme.palette.primary.main, 0.1)}, 
+          ${alpha(theme.palette.secondary.main, 0.1)})`
+    }}>
+      <MotionCard initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        sx={{
+          borderRadius: 4, boxShadow: '0 15px 35px rgba(0, 0, 0, 0.1)',
+          maxWidth: '450px',
+          width: '100%'
+        }}>
         <CardContent sx={{ p: { xs: 3, sm: 6 } }}>
           <Box sx={{ textAlign: 'center', mb: 4 }}>
             <Typography variant="h4" component="h1" sx={{ fontWeight: 800, mb: 1 }}>
@@ -184,23 +202,85 @@ const Login = () => {
 
           <form onSubmit={handleSubmit}>
             <Stack spacing={3}>
-              <TextField fullWidth name="email" type="email" label="Email Address" value={formData.email} onChange={handleChange} required InputProps={{ startAdornment: (<InputAdornment position="start"><Email color="action" /></InputAdornment>), }} />
-              <TextField fullWidth name="password" type={showPassword ? 'text' : 'password'} label="Password" value={formData.password} onChange={handleChange} required InputProps={{ startAdornment: (<InputAdornment position="start"><Lock color="action" /></InputAdornment>), endAdornment: (<InputAdornment position="end"><IconButton onClick={() => setShowPassword(!showPassword)} edge="end">{showPassword ? <VisibilityOff /> : <Visibility />}</IconButton></InputAdornment>), }} />
+              <TextField fullWidth
+                name="email"
+                type="email"
+                label="Email Address"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                InputProps={{
+                  startAdornment:
+                    (<InputAdornment position="start">
+                      <Email color="action" />
+                    </InputAdornment>),
+                }} />
+              <TextField fullWidth
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                label="Password" value={formData.password}
+                onChange={handleChange}
+                required
+                InputProps={{
+                  startAdornment: (<InputAdornment position="start">
+                    <Lock color="action" />
+                  </InputAdornment>), endAdornment: (<InputAdornment position="end">
+                    <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                      {showPassword ?
+                        <VisibilityOff /> :
+                        <Visibility />}
+                    </IconButton>
+                  </InputAdornment>),
+                }} />
               <Box sx={{ textAlign: 'right' }}>
-                <Link component="button" type="button" variant="body2" onClick={handleOpenResetDialog} sx={{ color: 'primary.main', textDecoration: 'none', fontWeight: 500, '&:hover': { textDecoration: 'underline' } }}>
+                <Link component="button"
+                  type="button"
+                  variant="body2"
+                  onClick={handleOpenResetDialog}
+                  sx={{
+                    color: 'primary.main',
+                    textDecoration: 'none',
+                    fontWeight: 500,
+                    '&:hover': {
+                      textDecoration: 'underline'
+                    }
+                  }}>
                   Forgot password?
                 </Link>
               </Box>
-              <Button type="submit" variant="contained" size="large" disabled={loading} sx={{ py: 1.5, fontSize: '1.1rem', fontWeight: 600, borderRadius: 3 }}>
+              <Button type="submit"
+                variant="contained"
+                size="large"
+                disabled={loading}
+                sx={{
+                  py: 1.5,
+                  fontSize: '1.1rem',
+                  fontWeight: 600,
+                  borderRadius: 3
+                }}>
                 {loading ? 'Signing In...' : 'Sign In'}
               </Button>
             </Stack>
           </form>
 
-          <Divider sx={{ my: 4 }}><Typography variant="body2" color="text.secondary">Or continue with</Typography></Divider>
+          <Divider sx={{ my: 4 }}>
+            <Typography variant="body2" color="text.secondary">Or continue with</Typography>
+          </Divider>
 
           <Stack spacing={2}>
-            <Button variant="outlined" size="large" startIcon={<Google />} onClick={() => handleSocialLogin('Google')} sx={{ py: 1.5, borderRadius: 3, borderColor: 'divider', color: 'text.primary', '&:hover': { borderColor: 'primary.main', bgcolor: alpha(theme.palette.primary.main, 0.04) } }}>
+            <Button variant="outlined" size="large"
+              startIcon={<Google />}
+              onClick={() => handleSocialLogin('Google')}
+              sx={{
+                py: 1.5,
+                borderRadius: 3,
+                borderColor: 'divider',
+                color: 'text.primary',
+                '&:hover': {
+                  borderColor: 'primary.main',
+                  bgcolor: alpha(theme.palette.primary.main, 0.04)
+                }
+              }}>
               Continue with Google
             </Button>
           </Stack>
@@ -208,7 +288,16 @@ const Login = () => {
           <Box sx={{ textAlign: 'center', mt: 4 }}>
             <Typography variant="body2" color="text.secondary">
               Don't have an account?{' '}
-              <Link component="button" type="button" variant="body2" onClick={() => navigate('/register')} sx={{ color: 'primary.main', textDecoration: 'none', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}>
+              <Link component="button"
+                type="button"
+                variant="body2"
+                onClick={() => navigate('/register')}
+                sx={{
+                  color: 'primary.main',
+                  textDecoration: 'none',
+                  fontWeight: 600,
+                  '&:hover': { textDecoration: 'underline' }
+                }}>
                 Sign up here
               </Link>
             </Typography>
@@ -236,8 +325,15 @@ const Login = () => {
             Enter your email address and we will send you a link to reset your password.
           </Typography>
 
-          {resetSuccess && <Alert severity="success" sx={{ mb: 2 }}>{resetSuccess}</Alert>}
-          {resetError && <Alert severity="error" sx={{ mb: 2 }}>{resetError}</Alert>}
+          {resetSuccess &&
+            <Alert severity="success" sx={{ mb: 2 }}>
+              {resetSuccess}
+            </Alert>}
+
+          {resetError &&
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {resetError}
+            </Alert>}
 
           <form onSubmit={handleResetSubmit}>
             <TextField
@@ -249,7 +345,11 @@ const Login = () => {
               onChange={(e) => setResetEmail(e.target.value)}
               required
               disabled={resetLoading || resetSuccess}
-              InputProps={{ startAdornment: (<InputAdornment position="start"><Email color="action" /></InputAdornment>), }}
+              InputProps={{
+                startAdornment: (<InputAdornment position="start">
+                  <Email color="action" />
+                </InputAdornment>),
+              }}
             />
             <Button
               type="submit"

@@ -244,7 +244,15 @@ export const ScheduleManagementView = ({ professional, user, isEditable }) => {
               }}>
               <Typography variant="body2" sx={{ fontWeight: isSelected || isToday ? 'medium' : 'normal' }}>{day}</Typography>
             </IconButton>
-            {hasEvent && <Box sx={{ position: 'absolute', bottom: 4, left: '50%', transform: 'translateX(-50%)', width: 5, height: 5, borderRadius: '50%', bgcolor: isSelected ? 'wh' : 'green' }} />}
+            {hasEvent &&
+              <Box sx={{
+                position: 'absolute',
+                bottom: 4, left: '50%',
+                transform: 'translateX(-50%)',
+                width: 5, height: 5,
+                borderRadius: '50%',
+                bgcolor: isSelected ? 'white' : 'green'
+              }} />}
           </Box>
         </Grid>
       );
@@ -254,12 +262,20 @@ export const ScheduleManagementView = ({ professional, user, isEditable }) => {
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
           <Typography variant="body1" sx={{ fontWeight: 'medium' }}>{`${monthNames[month]} ${year}`}</Typography>
           <Box>
-            <IconButton onClick={handleMiniCalPrevMonth} size="small"><ChevronLeft /></IconButton>
-            <IconButton onClick={handleMiniCalNextMonth} size="small"><ChevronRight /></IconButton>
+            <IconButton onClick={handleMiniCalPrevMonth} size="small">
+              <ChevronLeft />
+            </IconButton>
+            <IconButton onClick={handleMiniCalNextMonth} size="small">
+              <ChevronRight />
+            </IconButton>
           </Box>
         </Box>
         <Grid container columns={7} sx={{ textAlign: 'center' }}>
-          {daysOfWeek.map((day, index) => <Grid item xs={1} key={`${day}-${index}`}><Typography variant="caption" color="text.secondary">{day}</Typography></Grid>)}
+          {daysOfWeek.map((day, index) =>
+            <Grid item xs={1} key={`${day}-${index}`}>
+              <Typography variant="caption" color="text.secondary">{day}
+              </Typography>
+            </Grid>)}
         </Grid>
         <Grid container columns={7} rowSpacing={0.5} mt={1}>{calendarCells}</Grid>
       </Box>
@@ -449,9 +465,50 @@ export const ScheduleManagementView = ({ professional, user, isEditable }) => {
         <DialogTitle> {modalMode === 'create' ? 'Add Availability Slot' : 'Edit Slot'} </DialogTitle>
         <DialogContent>
           <Stack spacing={2} pt={1}>
-            <TextField label="Title" fullWidth autoFocus value={newEventData.title} onChange={(e) => setNewEventData({ ...newEventData, title: e.target.value })} />
-            <TextField label="Start Time" type="time" fullWidth value={newEventData.start ? newEventData.start.toTimeString().substring(0, 5) : ''} onChange={(e) => { const [h, m] = e.target.value.split(':'); const newStart = new Date(newEventData.start); newStart.setHours(parseInt(h) || 0, parseInt(m) || 0); setNewEventData({ ...newEventData, start: newStart }); }} InputLabelProps={{ shrink: true }} />
-            <TextField label="End Time" type="time" fullWidth value={newEventData.end ? newEventData.end.toTimeString().substring(0, 5) : ''} onChange={(e) => { const [h, m] = e.target.value.split(':'); const newEnd = new Date(newEventData.end); newEnd.setHours(parseInt(h) || 0, parseInt(m) || 0); setNewEventData({ ...newEventData, end: newEnd }); }} InputLabelProps={{ shrink: true }} />
+            <TextField label="Title"
+              fullWidth autoFocus
+              value={newEventData.title} onChange={(e) => setNewEventData({
+                ...newEventData, title: e.target.
+                  value
+              })} />
+            <TextField label="Start Time" type="time"
+              fullWidth
+              value={newEventData.start ? newEventData.start.toTimeString().substring(0, 5) : ''}
+              onChange={(e) => {
+                const [h, m] = e.target.value.split(':');
+                const newStart = new Date(newEventData.start); newStart.setHours(parseInt(h) || 0, parseInt(m) || 0);
+                setNewEventData({ ...newEventData, start: newStart });
+              }}
+              InputLabelProps={{ shrink: true }}
+              sx={{
+                '& .MuiInputBase-input': {
+                  color: '#2F2F2F', // Ensure text color is dark primary
+                },
+                '& .MuiInputBase-input::-webkit-calendar-picker-indicator': {
+                  filter: 'invert(0.5)', // Invert filter to make white icon dark (darker gray)
+                  opacity: 1,
+                  cursor: 'pointer',
+                },
+              }} />
+            <TextField label="End Time" type="time"
+              fullWidth
+              value={newEventData.end ? newEventData.end.toTimeString().substring(0, 5) : ''}
+              onChange={(e) => {
+                const [h, m] = e.target.value.split(':');
+                const newEnd = new Date(newEventData.end); newEnd.setHours(parseInt(h) || 0, parseInt(m) || 0);
+                setNewEventData({ ...newEventData, end: newEnd });
+              }}
+              InputLabelProps={{ shrink: true }}
+              sx={{
+                '& .MuiInputBase-input': {
+                  color: '#2F2F2F', // Ensure text color is dark primary
+                },
+                '& .MuiInputBase-input::-webkit-calendar-picker-indicator': {
+                  filter: 'invert(0.5)', // Invert filter to make white icon dark (darker gray)
+                  opacity: 1,
+                  cursor: 'pointer',
+                },
+              }} />
           </Stack>
         </DialogContent>
         <DialogActions>

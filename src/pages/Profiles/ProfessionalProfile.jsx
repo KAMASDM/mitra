@@ -1,5 +1,5 @@
 // src/pages/Profiles/ProfessionalProfile.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Box,
   Container,
@@ -57,6 +57,7 @@ const MotionCard = motion(Card);
 const ProfessionalProfile = () => {
   const theme = useTheme();
   const loggedInUser = JSON.parse(localStorage.getItem('loginInfo'));
+  const fileInputRef = useRef(null);
 
   const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState(null);
@@ -181,7 +182,17 @@ const ProfessionalProfile = () => {
         }
       }
 
-      const result = await updateProfessionalProfile(loggedInUser.user.id, updatedProfile.professionalId, updatedProfile);
+      // const payloadToSend = {
+      //   ...updatedProfile,
+      //   educational_qualification: updatedProfile.qualifications.join(', '),
+      //   languages_spoken: updatedProfile.languages.join(', '),
+      // };
+
+      // // Remove the original array properties, as the service function only needs the strings
+      // delete payloadToSend.qualifications;
+      // delete payloadToSend.languages;
+
+      const result = await updateProfessionalProfile(loggedInUser.user.id, updatedProfile.professionalId, updatedProfile.photoURL);
 
       if (result.success) {
         showNotification('Profile updated successfully!');
@@ -201,6 +212,12 @@ const ProfessionalProfile = () => {
   const handleCancel = () => {
     setIsEditing(false);
     // Optionally refetch data to discard changes
+    setProfileData(initialProfileData);
+    setProfileImageUrl(initialProfileData.photoURL || '');
+    setProfileImageFile(null);
+    setNewQualification('');
+    setNewLanguage('');
+    setNotification({ open: false, message: '', severity: 'success' });
   };
 
   if (loading) {
@@ -290,22 +307,35 @@ const ProfessionalProfile = () => {
                         bgcolor: 'primary.main',
                         fontSize: '3rem',
                       }}
+                      src={profileImageUrl || profileData.photoURL}
                     >
                       {profileData.firstName?.charAt(0)}
                     </Avatar>
                     {isEditing && (
-                      <IconButton
-                        sx={{
-                          position: 'absolute',
-                          bottom: 0,
-                          right: 0,
-                          bgcolor: 'primary.main',
-                          color: 'white',
-                          '&:hover': { bgcolor: 'primary.dark' },
-                        }}
-                      >
-                        <PhotoCamera />
-                      </IconButton>
+                      <>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          hidden
+                          accept="image/*"
+                          onChange={handleImageChange}
+                        />
+                        <IconButton
+                          component="label"
+                          htmlFor="profile-picture-upload"
+                          onClick={() => fileInputRef.current.click()}
+                          sx={{
+                            position: 'absolute',
+                            bottom: 0,
+                            right: 0,
+                            bgcolor: 'primary.main',
+                            color: 'white',
+                            '&:hover': { bgcolor: 'primary.dark' },
+                          }}
+                        >
+                          <PhotoCamera />
+                        </IconButton>
+                      </>
                     )}
                   </Box>
                   <Box sx={{ ml: 3 }}>
