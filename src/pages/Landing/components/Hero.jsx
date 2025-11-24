@@ -118,6 +118,12 @@ const Hero = () => {
                     transition={{ duration: 0.6, delay: 0.4 + index * 0.1 }}
                     whileHover={{ scale: 1.05, y: -5 }}
                     sx={{
+                      width: 170,
+                      height: 170,
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                      alignItems: "center",
                       p: { xs: 2, sm: 3 },
                       borderRadius: 4,
                       background: 'rgba(255, 255, 255, 0.8)',
@@ -133,7 +139,7 @@ const Hero = () => {
                     onClick={() => navigate("/services")}
                   >
                     <Box sx={{ color: service.color, fontSize: '2.5rem', mb: 1 }}>{service.icon}</Box>
-                    <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary',  fontSize: { xs: '0.8rem', sm: '1rem' } }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary', fontSize: { xs: '0.8rem', sm: '1rem' } }}>
                       {service.title}
                     </Typography>
                   </MotionBox>

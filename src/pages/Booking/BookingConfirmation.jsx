@@ -104,7 +104,7 @@ const BookingConfirmation = () => {
     // Simulate sharing
     if (navigator.share) {
       navigator.share({
-        title: 'SWEEKAR Appointment Confirmation',
+        title: 'Gazra-MitraAppointment Confirmation',
         text: `Appointment confirmed with ${bookingDetails.professional.name} on ${formatDate(bookingDetails.appointment.date)}`,
         url: window.location.href,
       });

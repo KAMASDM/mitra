@@ -132,7 +132,7 @@ const Features = () => {
               lineHeight: 1.6,
             }}
           >
-            Discover why thousands trust SWEEKAR for their professional service needs. 
+            Discover why thousands trust Gazra-Mitrafor their professional service needs. 
             Our platform is designed with your safety, privacy, and convenience in mind.
           </Typography>
         </MotionBox>
@@ -372,7 +372,7 @@ const Features = () => {
               </Grid>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            {/* <Grid item xs={12} md={6}>
               <Box
                 sx={{
                   position: 'relative',
@@ -399,10 +399,10 @@ const Features = () => {
                     Our professionals are trained to understand and celebrate the unique 
                     experiences of every individual they serve.
                   </Typography>
-                </Box>
+                </Box> */}
                 
                 {/* Decorative elements */}
-                <Box
+                {/* <Box
                   sx={{
                     position: 'absolute',
                     top: -50,
@@ -425,7 +425,7 @@ const Features = () => {
                   }}
                 />
               </Box>
-            </Grid>
+            </Grid> */}
           </Grid>
         </MotionBox>
 

@@ -1580,7 +1580,7 @@ const AdminDashboard = () => {
               color: 'text.secondary',
               fontWeight: 400
             }}>
-            Welcome back, {user?.user?.name || 'Admin'}! Monitor and manage the SWEEKAR platform.
+            Welcome back, {user?.user?.name || 'Admin'}! Monitor and manage the Gazra-Mitraplatform.
           </Typography>
         </Box>
 

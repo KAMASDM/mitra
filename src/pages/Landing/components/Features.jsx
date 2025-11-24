@@ -83,14 +83,14 @@ const sessionTypes = [
   },
 ];
 
-const qualityFeatures = [
-  'Licensed & Certified Professionals',
-  'LGBTQAI+ Affirmative Care',
-  'Cultural Competency Training',
-  'Regular Quality Assessments',
-  'Client Feedback Integration',
-  'Continuing Education Requirements',
-];
+// const qualityFeatures = [
+//   'Licensed & Certified Professionals',
+//   'LGBTQAI+ Affirmative Care',
+//   'Cultural Competency Training',
+//   'Regular Quality Assessments',
+//   'Client Feedback Integration',
+//   'Continuing Education Requirements',
+// ];
 
 const FeaturesSection = () => {
   const theme = useTheme();
@@ -132,7 +132,7 @@ const FeaturesSection = () => {
               lineHeight: 1.6,
             }}
           >
-            Discover why thousands trust SWEEKAR for their professional service needs. 
+            Discover why thousands trust Gazra-Mitrafor their professional service needs. 
             Our platform is designed with your safety, privacy, and convenience in mind.
           </Typography>
         </MotionBox>
@@ -312,7 +312,7 @@ const FeaturesSection = () => {
         </MotionBox>
 
         {/* Quality Assurance */}
-        <MotionBox
+        {/* <MotionBox
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -399,10 +399,10 @@ const FeaturesSection = () => {
                     Our professionals are trained to understand and celebrate the unique 
                     experiences of every individual they serve.
                   </Typography>
-                </Box>
+                </Box> */}
                 
                 {/* Decorative elements */}
-                <Box
+                {/* <Box
                   sx={{
                     position: 'absolute',
                     top: -50,
@@ -427,7 +427,7 @@ const FeaturesSection = () => {
               </Box>
             </Grid>
           </Grid>
-        </MotionBox>
+        </MotionBox> */}
 
         {/* Additional Features */}
         <MotionBox

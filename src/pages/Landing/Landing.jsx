@@ -13,14 +13,14 @@ const Landing = () => {
         <HeroSection />
       </Box>
       <Divider />
-      <Box component="section" id="about" sx={{ py: { xs: 6, md: 10 } }}>
+      {/* <Box component="section" id="about" sx={{ py: { xs: 6, md: 10 } }}>
         <AboutSection />
-      </Box>
-      <Divider />
-      <Box component="section" id="services" sx={{ py: { xs: 6, md: 10 }, bgcolor: 'background.default' }}>
+      </Box> */}
+      {/* <Divider /> */}
+      {/* <Box component="section" id="services" sx={{ py: { xs: 6, md: 10 }, bgcolor: 'background.default' }}>
         <ServicesSection />
       </Box>
-      <Divider />
+      <Divider /> */}
       <Box component="section" id="features" sx={{ py: { xs: 6, md: 10 } }}>
         <FeaturesSection />
       </Box>

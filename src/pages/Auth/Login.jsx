@@ -194,7 +194,7 @@ const Login = () => {
               Welcome Back
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1.1rem' }}>
-              Sign in to your SWEEKAR account
+              Sign in to your Gazra-Mitraaccount
             </Typography>
           </Box>
 

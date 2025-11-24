@@ -281,7 +281,7 @@
 //           <CardContent sx={{ p: { xs: 3, sm: 5 } }}>
 //             <Box sx={{ textAlign: 'center', mb: 4 }}>
 //               <Typography variant="h4" component="h1" sx={{ fontWeight: 800, mb: 1 }}>
-//                 Join SWEEKAR
+//                 Join Gazra-Mitra
 //               </Typography>
 //               <Typography variant="body1" color="text.secondary">
 //                 Create your account and start your journey with us
@@ -619,7 +619,7 @@ const Register = () => {
         };
         localStorage.setItem('loginInfo', JSON.stringify(localData));
 
-        toast.success('Phone verification successful! Welcome to SWEEKAR.');
+        toast.success('Phone verification successful! Welcome to Gazra-Mitra.');
         if (result.userData.role === 'PROFESSIONAL') {
           navigate('/professional/dashboard');
         } else {
@@ -814,7 +814,7 @@ const Register = () => {
           <CardContent sx={{ p: { xs: 3, sm: 5 } }}>
             <Box sx={{ textAlign: 'center', mb: 4 }}>
               <Typography variant="h4" component="h1" sx={{ fontWeight: 800, mb: 1 }}>
-                Join SWEEKAR
+                Join Gazra-Mitra
               </Typography>
               <Typography variant="body1" color="text.secondary">
                 Create your account and start your journey with us

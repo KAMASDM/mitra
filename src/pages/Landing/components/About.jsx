@@ -85,7 +85,7 @@ const About = () => {
               mb: 2,
             }}
           >
-            About SWEEKAR
+            About Gazra-Mitra
           </Typography>
           <Typography
             variant="h6"
@@ -96,7 +96,7 @@ const About = () => {
               lineHeight: 1.6,
             }}
           >
-            SWEEKAR (स्वीकार) means "acceptance" in Hindi. We're building a platform that truly accepts
+            Gazra-Mitra (गज़रा-मित्र) means "acceptance" in Hindi. We're building a platform that truly accepts
             and supports everyone, providing safe, inclusive professional services for the LGBTQAI+
             community and women.
           </Typography>
@@ -181,7 +181,7 @@ const About = () => {
                 }}
               >
                 We understand that finding the right professional who truly understands your unique
-                experiences can be challenging. That's why we've created SWEEKAR - a platform that
+                experiences can be challenging. That's why we've created Gazra-Mitra - a platform that
                 connects you with verified professionals who are not just qualified, but also
                 committed to providing inclusive, judgment-free care.
               </Typography>
@@ -329,7 +329,7 @@ const About = () => {
                       fontWeight: 900,
                       color: 'primary.main',
                       mb: 1,
-                      fontSize: { xs: '2.5rem', md: '3.5rem' },
+                      fontSize: { xs: '2rem', md: '3rem' },
                     }}
                   >
                     {stat.number}
@@ -368,7 +368,7 @@ const About = () => {
                   mb: 3,
                 }}
               >
-                Why Choose SWEEKAR?
+                Why Choose Gazra-Mitra?
               </Typography>
               <Typography
                 variant="body1"
@@ -379,7 +379,7 @@ const About = () => {
                   fontSize: '1.1rem',
                 }}
               >
-                Unlike traditional platforms, SWEEKAR is built specifically with the LGBTQAI+
+                Unlike traditional platforms, Gazra-Mitra is built specifically with the LGBTQAI+
                 community and women in mind. Every professional on our platform has been
                 trained in inclusive care and understands the unique challenges you may face.
               </Typography>

@@ -85,7 +85,7 @@ const About = () => {
               mb: 2,
             }}
           >
-            About SWEEKAR
+            About Gazra-Mitra
           </Typography>
           <Typography
             variant="h6"
@@ -96,7 +96,7 @@ const About = () => {
               lineHeight: 1.6,
             }}
           >
-            SWEEKAR (स्वीकार) means "acceptance" in Hindi. We're building a platform that truly accepts
+            Gazra-Mitra (गज़रा-मित्र) means "acceptance" in Hindi. We're building a platform that truly accepts
             and supports everyone, providing safe, inclusive professional services for the LGBTQAI+
             community and women.
           </Typography>
@@ -111,7 +111,7 @@ const About = () => {
           sx={{ mb: 10 }}
         >
           <Grid container spacing={6} alignItems="center">
-            <Grid item xs={12} md={6}>
+            {/* <Grid item xs={12} md={6}>
               <Box
                 sx={{
                   height: 250,
@@ -133,9 +133,9 @@ const About = () => {
                   <Typography variant="h6" sx={{ opacity: 0.9 }}>
                     Breaking barriers, building bridges
                   </Typography>
-                </Box>
+                </Box> */}
                 {/* Decorative elements */}
-                <Box
+                {/* <Box
                   sx={{
                     position: 'absolute',
                     top: -50,
@@ -158,7 +158,7 @@ const About = () => {
                   }}
                 />
               </Box>
-            </Grid>
+            </Grid> */}
             <Grid item xs={12} md={6}>
               <Typography
                 variant="h4"
@@ -181,7 +181,7 @@ const About = () => {
                 }}
               >
                 We understand that finding the right professional who truly understands your unique
-                experiences can be challenging. That's why we've created SWEEKAR - a platform that
+                experiences can be challenging. That's why we've created Gazra-Mitra- a platform that
                 connects you with verified professionals who are not just qualified, but also
                 committed to providing inclusive, judgment-free care.
               </Typography>
@@ -329,7 +329,7 @@ const About = () => {
                       fontWeight: 900,
                       color: 'primary.main',
                       mb: 1,
-                      fontSize: { xs: '2.5rem', md: '3.5rem' },
+                      fontSize: { xs: '2rem', md: '3rem' },
                     }}
                   >
                     {stat.number}
@@ -368,7 +368,7 @@ const About = () => {
                   mb: 3,
                 }}
               >
-                Why Choose SWEEKAR?
+                Why Choose Gazra-Mitra?
               </Typography>
               <Typography
                 variant="body1"
@@ -379,7 +379,7 @@ const About = () => {
                   fontSize: '1.1rem',
                 }}
               >
-                Unlike traditional platforms, SWEEKAR is built specifically with the LGBTQAI+
+                Unlike traditional platforms, Gazra-Mitrais built specifically with the LGBTQAI+
                 community and women in mind. Every professional on our platform has been
                 trained in inclusive care and understands the unique challenges you may face.
               </Typography>
@@ -395,7 +395,7 @@ const About = () => {
                 access to professional services without fear of discrimination or judgment.
               </Typography>
             </Grid>
-            <Grid item xs={12} md={6}>
+            {/* <Grid item xs={12} md={6}>
               <Box
                 sx={{
                   height: 250,
@@ -417,9 +417,9 @@ const About = () => {
                   <Typography variant="h6" sx={{ opacity: 0.9 }}>
                     For everyone, everywhere
                   </Typography>
-                </Box>
+                </Box> */}
                 {/* Decorative elements */}
-                <Box
+                {/* <Box
                   sx={{
                     position: 'absolute',
                     top: -30,
@@ -442,7 +442,7 @@ const About = () => {
                   }}
                 />
               </Box>
-            </Grid>
+            </Grid> */}
           </Grid>
         </MotionBox>
       </Container>
